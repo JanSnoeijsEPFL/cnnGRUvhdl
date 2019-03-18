@@ -60,8 +60,8 @@ beginogic:=0;
 	ARR: process(x, w)
 	begin
 		for i in 0 to NBITS-2 loop
-			x_arr(i) <= x((NBITS-1)+(NBITS-1)*i downto (NBITS-1)*i)
-			w_arr(i) <= w((NBITS-1)+(NBITS-1)*i downto (NBITS-1)*i)
+			x_arr(i) <= x((NBITS-1)+NBITS*i downto NBITS*i);
+			w_arr(i) <= w((NBITS-1)+NBITS*i downto NBITS*i);
 		end loop;
 	end process arr;
 	
