@@ -35,47 +35,185 @@ entity accelerator is
 end entity accelerator;
 
 architecture rtl of accelerator is
+	
+	-- AV master - AV slave
+	ASReadAddr : std_logic_vector(31 downto 0); -- read address in SDRAM for data fetching
+	ASWriteAddr : std_logic_vector(31 downto 0); -- write address in SDRAM for writing results of algorithm
+	ASReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
+	
+	--dcfifo write interface
+	FifoDataIn : std_logic_vector(31 downto 0);
+	FifoWrreq : std_logic;
+	FifoWrclk : std_logic;
+	FifoWrempty : std_logic;
+	FifoWrfull : std_logic;
+	
+	--dcfifo read interface
+	FifoDataOut : std_logic_vector(31 downto 0);
+	FifoRdreq : std_logic;
+	FifoRdclk : std_logic;
+	FifoRdempty : std_logic;
+	
+	--AV master - Controller
+	CtrlFetchNNParam : std_logic; --signal to allow reading parameters from SDRAM (should be kept at 1 for the whole duration)
+	CtrlFetchRTData : std_logic; --signal to allow fetching RT data
+	CtrlFifoWriteAllow : std_logic; -- allow writing data to FIFO
+	CtrlFifoWriting : std_logic; -- indicates data is being written in FIFO
+	CtrlWriteResult : std_logic; -- allows writing result to SDRAM
+	CtrlReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
+	CtrlBurstCntrEnd : std_logic;
+	CtrlNbBurstCntrEnd : std_logic; -- tells controller when NbBursts completed
+	CtrlInitState : std_logic; -- controller is in init state if this signal equals to 1
+	
+	--av slave - controller
+	CtrlNNParamset : std_logic; -- set by proc to indicate parameters are ready in SDRAM
+	CtrlRTDataReady:  std_logic; -- set by proc to indicate new RT data is ready in SDRAM
+	CtrlStatusCtrller : std_logic_vector(2 downto 0) -- status of controller for processor checks
+	
+	-- fifo backend
+	ParamRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	ParamRegFileWriteEn : std_logic;
+	ParamRegFileRegNumber : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
+	
+	XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	-- signal from classifier
+	ClassSeqClass: std_logic; -- sequence classification result
+	
+	component fifo_1
+		port
+		(
+			data		: in std_logic_vector(31 downto 0);
+			rdclk		: in std_logic ;
+			rdreq		: in std_logic ;
+			wrclk		: in std_logic ;
+			wrreq		: in std_logic ;
+			q		: out std_logic_vector(31 downto 0);
+			rdempty		: out std_logic ;
+			wrfull		: out std_logic 
+		);
+	end component;
 
-	component fifo
-	generic (
-		add_ram_output_register	:	string := "OFF";
-		add_usedw_msb_bit	:	string := "OFF";
-		clocks_are_synchronized	:	string := "FALSE";
-		delay_rdusedw	:	natural := 1;
-		delay_wrusedw	:	natural := 1;
-		intended_device_family	:	string := "unused";
-		enable_ecc	:	string := "FALSE";
-		lpm_numwords	:	natural;
-		lpm_showahead	:	string := "OFF";
-		lpm_width	:	natural;
-		lpm_widthu	:	natural := 1;
-		overflow_checking	:	string := "ON";
-		rdsync_delaypipe	:	natural := 0;
-		read_aclr_synch	:	string := "OFF";
-		underflow_checking	:	string := "ON";
-		use_eab	:	string := "ON";
-		write_aclr_synch	:	string := "OFF";
-		wrsync_delaypipe	:	natural := 0;
-		lpm_hint	:	string := "UNUSED";
-		lpm_type	:	string := "dcfifo"
-	);
-	port(
-		aclr	:	in std_logic := '0';
-		data	:	in std_logic_vector(lpm_width-1 downto 0);
-		eccstatus	:	out std_logic_vector(2-1 downto 0);
-		q	:	out std_logic_vector(lpm_width-1 downto 0);
-		rdclk	:	in std_logic;
-		rdempty	:	out std_logic;
-		rdfull	:	out std_logic;
-		rdreq	:	in std_logic;
-		rdusedw	:	out std_logic_vector(lpm_widthu-1 downto 0);
-		wrclk	:	in std_logic;
-		wrempty	:	out std_logic;
-		wrfull	:	out std_logic;
-		wrreq	:	in std_logic;
-		wrusedw	:	out std_logic_vector(lpm_widthu-1 downto 0)
-	);
 end component;
 begin
+	fifo_1_inst : fifo_1 port map (
+		data	 => FifoDataIn,
+		rdclk	 => clk,
+		rdreq	 => FifoRdreq,
+		wrclk	 => clk,
+		wrreq	 => FifoWrreq,
+		q	 => FifoDataOut,
+		rdempty	 => FifoRdempty,
+		wrfull	 => FifoWrfull
+	);
 	
+	av_master_inst : entity work.av_master(rtl) 
+	generic map(
+		NBITS => NBITS,
+		FRACBITS => FRACBITS
+		)
+	port map(
+		--avalon interface
+		clk => clk,
+		rstB => rstB,
+		burstcount => AMburstcount,
+		waitrequest => AMwaitrequest
+		readEn => AMreadEn,
+		writeEn => AMwriteEn,
+		readdata => AMreaddata,
+		writedata => AMwritedata,
+		addressRead => AMaddressRead,
+		addressWrite => AMaddressWrite,
+		byteenable => AMbyteenable,
+		
+		ASReadAddr => ASReadAddr,
+		ASWriteAddr => ASWriteAddr,
+		ASReadingActive => ASReadingActive,
+		
+		FifoDataIn => FifoDataIn,
+		FifoWrreq => FifoWrreq,
+		FifoWrfull => FifoWrfull,
+
+		CtrlFetchRTData => CtrlFetchRTData,
+		CtrlFifoWriteAllow => CtrlFifoWriteAllow,
+		CtrlFifoWriting => CtrlFifoWriting,
+		CtrlWriteResult => CtrlWriteResult,
+		CtrlReadingActive => CtrlReadingActive,
+		CtrlBurstCntrEnd => CtrlBurstCntrEnd,
+		CtrlNbBurstCntrEnd => CtrlNbBurstCntrEnd,
+		CtrlInitState => CntrlInitState,
+		ClassSeqClass => ClassSeqClass
+		);
+	
+	av_slave_inst : entity work.av_slave(rtl)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		readEn => ASreadEn,
+		writeEn => ASwriteEn,
+		regAddress => ASregAddress,
+		readdata => ASreaddata,
+		writedata => ASwritedata,
+	
+		AMWriteAddr => ASWriteAddr,
+		AMReadAddr => ASWriteAddr,
+		AMReadingActive => ASReadingActive,	
+		
+		CtrlNNParamset => CtrlNNParamset,
+		CtrlRTDataReady => CtrlRTDataReady,
+		CtrlStatusCtrller => CtrlStatusCtrller	
+	);
+	
+	fifo_backend_inst : entity work.fifo_backend(rtl)
+	generic map(
+		NBITS => NBITS,
+		FRACBITS => FRACBITS,
+		NBREG => NBREG
+	)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		
+		FifoDataOut => FifoDataOut,
+		FifoRdreq => FifoRdreq,
+		FifoRdempty => FifoRdempty,
+	
+		ParamRegFileDataIn => ParamRegFileDataIn,
+		ParamRegFileWriteEn => ParamRegFileWriteEn,
+		ParamRegFileRegNumber => ParamRegFileRegNumber,
+	
+		XRegFileDataIn => XRegFileDataIn,
+		XRegFileWriteEn => XRegFileWriteEn,
+
+		CtrlStatusCtrller => CtrlStatusCtrller
+	);
+	
+	controller_inst : entity work.controller(rtl)
+	generic map(
+		NBITS => NBITS,
+		FRACBITS => FRACBITS,
+		NBREG => NBREG
+	)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		
+		ASNNParamSet => CtrlNNParamSet;
+		ASRTDataReady => CtrlDataready;
+		ASStatusCtrller => CtrlStatusCtrller;
+		
+		AMFetchNNParam => CtrlFetchNNParam,
+		AMFetchRTData => CtrlFecthRTData,
+		AMFifoWriteAllow => CtrlFifoWriteAllow,
+		AMFifoWriting => CtrlFifoWriting,
+		AMWriteResult => CtrlWriteResult,
+		AMReadingActive => CtrlReadingActive,
+		AMBurstCntrEnd => CtrlBurstCntrEnd,
+		AMNbBurstCntrEnd => CtrlNbBurstCntrEnd,
+		AMCtrlInitState => CtrlInitState,
+		
+		FifoRdempty => FifoRdempty,
+		
+		FBStatusCtrller => CtrlStatusCtrller
+	);
 end architecture rtl;

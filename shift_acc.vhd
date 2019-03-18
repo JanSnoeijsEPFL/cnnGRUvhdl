@@ -68,12 +68,12 @@ begin
 	
 	SHIFT:
 	for i in 0 to NBITS-2 generate
-		multiplier: entity work.multiplier(rtl);
+		multiplier: entity work.multiplier(rtl)
 		generic map(
 			NBITS => NBITS,
 			NACC => NACC,
 			FRACBITS => FRACBITS
-		);
+		)
 		port map(
 			clk => clk,
 			rstB => rstB,

@@ -33,7 +33,8 @@ entity controller is
 		
 		--interface with fifo backend (FB)
 		FBStatusCtrller : out std_logic_vector(2 downto 0);
-		FBRegNumber : out std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
+		-- done in fifo backend
+		--FBRegNumber : out std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
 		
 		);
 end entity controller;

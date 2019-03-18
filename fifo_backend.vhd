@@ -16,8 +16,9 @@ entity fifo_backend is
 		
 		-- interface with fifo
 		FifoDataOut : in std_logic_vector(31 downto 0);
-		FifoRdempty : in std_logic;
 		FifoRdreq : out std_logic;
+		--FifoRdclk : out std_logic;
+		FifoRdempty : in std_logic;
 		
 		--interface with param reg file
 		ParamRegFileDataIn : out std_logic_vector((NBITS-1)*NBITS-1 downto 0);
@@ -30,10 +31,7 @@ entity fifo_backend is
 		
 		-- interface with controller
 		CtrlStatusCtrller : in std_logic_vector(2 downto 0)
-		--CtrlRegNumber : in std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
-		
-		-- interface with avalon master
-		--AMReadingActive : in std_logic
+		--CtrlRegNumber : in std_logic_vector(intege			FifoDataOut : std_logic_vector(31 downto 0);
 	);
 end entity fifo_backend;
 
@@ -75,5 +73,8 @@ begin
 	end process CNTR;
 	
 	CntrRegNumberEnd <= '1' when CntrRegNumber = CntrRegMax else '0';
+	
+	-- output signals
+	FifoRdreq <= RdreqFifo;
 	
 end architecture rtl;

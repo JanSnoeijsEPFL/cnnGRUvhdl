@@ -3,6 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity av_master is
+	generic(
+		NBITS : natural := 6;
+		FRACBITS : natural := 4
+		);
 	port(
 	
 		--avalon interface
@@ -25,14 +29,8 @@ entity av_master is
 		
 		--dcfifo write interface
 		FifoDataIn : out std_logic_vector(31 downto 0);
-		FifoWrreq : out std_logic;
-		FifoWrclk : out std_logic;
-		FifoWrempty : in std_logic;
+		FifoWrreq: out std_logic;
 		FifoWrfull : in std_logic;
-		FifoAclr : out std_logic;
-		FifoWrusedw : in std_logic(31 downto 0);
-		FifoEccstatus : in std_logic_vector (1 downto 0);
-		FifoAlmostFull : in std_logic;
 		
 		--interface with control block
 		CtrlFetchNNParam : in std_logic; --signal to allow reading parameters from SDRAM (should be kept at 1 for the whole duration)
