@@ -75,6 +75,9 @@ architecture rtl of accelerator is
 	ParamRegFileWriteEn : std_logic;
 	ParamRegFileRegNumber : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
 	
+	-- param reg file (debug regfile data)
+	ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	
 	XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	-- signal from classifier
@@ -198,9 +201,9 @@ begin
 		clk => clk,
 		rstB => rstB,
 		
-		ASNNParamSet => CtrlNNParamSet;
-		ASRTDataReady => CtrlDataready;
-		ASStatusCtrller => CtrlStatusCtrller;
+		ASNNParamSet => CtrlNNParamSet,
+		ASRTDataReady => CtrlDataready,
+		ASStatusCtrller => CtrlStatusCtrller,
 		
 		AMFetchNNParam => CtrlFetchNNParam,
 		AMFetchRTData => CtrlFecthRTData,
@@ -216,4 +219,19 @@ begin
 		
 		FBStatusCtrller => CtrlStatusCtrller
 	);
+	
+	param_reg_file_inst : entity work.param_reg_file(rtl)
+	generic map(
+		NBITS => NBITS,
+		FRACBITS => FRACBITS,
+		NBREG => NBREG
+	)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		dataIn => ParamRegFileDataIn,
+		dataOut => ParamRegFileDataOut,
+		writeEn :=> ParamRegFileWriteEn
+	);
+	
 end architecture rtl;
