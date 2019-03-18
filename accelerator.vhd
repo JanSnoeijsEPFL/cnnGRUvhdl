@@ -231,7 +231,7 @@ begin
 		rstB => rstB,
 		dataIn => ParamRegFileDataIn,
 		dataOut => ParamRegFileDataOut,
-		writeEn :=> ParamRegFileWriteEn
+		writeEn => ParamRegFileWriteEn
 	);
 	
 end architecture rtl;
