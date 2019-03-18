@@ -28,7 +28,8 @@ architecture rtl of shift_acc is
 	constant CntrMax : std_logic_vector(2 downto 0) := "101"; -- 5
 	signal prodCntrEnd : std_logic;
 	signal prodCntrFirstLoopReg, prodCntrFirstLoopNext: std_logic;
-beginogic:=0;
+	
+begin
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then

@@ -44,6 +44,9 @@ entity av_master is
 		CtrlBurstCntrEnd : out std_logic;
 		CtrlNbBurstCntrEnd : out std_logic; -- tells controller when NbBursts completed
 		CtrlInitState : in std_logic; -- controller is in init state if this signal equals to 1
+		
+		--interface with fifo_backend (FB)
+		--FBReadingActive : out std_logic;
 		--interface with classifier
 		ClassSeqClass: in std_logic -- sequence classification result
 		
@@ -52,21 +55,21 @@ end entity av_master;
 
 architecture rtl of av_master is
 -- internal signals declaration
-	readingActive;
 	--addrWriteReg, addrWriteNext: std_logic_vector(31 downto 0);
 	ReadAddressReg, ReadAddressNext: std_logic_vector(31 downto 0);
 	BurstCntrReg, BurstCntrNext: std_logic_vector(3 downto 0);
 	NbBurstCntrReg, NbBurstCntrNext: std_logic_vector(9 downto 0);
 	FifoWriting : std_logic;
 	BurstCntrEn : std_logic;
+	ReadingActive : std_logic;
 begin 
 	
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then
 			ReadAddressReg <= (others => '0');
-			BurstCntrReg <= "1000";
-			NbBurstsCntrReg <= "1001101100";
+			BurstCntrReg <= "1000"; --8
+			NbBurstsCntrReg <= "1001101100"; --620
 		elsif rising_edge(clk) then
 			ReadAddressReg <= ReadAddressNext;
 			BurstCntrReg <= BurstCntrNext;
@@ -115,7 +118,7 @@ begin
 	byteeable <= "1111";
 	burstcount <= "1000";
 	addressRead <= (others => '0');
-	ASReadingActive <= '0';
+	ReadingActive <= '0';
 	BurstCntrEn <= '0';
 	begin -- all Ctrl signals should be synchronous
 		if waitrequest = '0' and (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') then --if access granted from avalon
@@ -123,7 +126,7 @@ begin
 				readEn <= '1';
 				addressRead <= ReadAddressReg;
 				FifoDataIn <= readdata;
-				ASReadingActive <= '1';
+				ReadingActive <= '1';
 				BurstCntrEn <= '1';
 			end if;
 		end if;
@@ -154,8 +157,12 @@ begin
 		end if;
 	end process WRITE_ ;
 	
-	--control signals
+	-- output signals 
 	CtrlFifoWriting <= FifoWriting;
+	CtrlReadingActive <= ReadingActive;
+	ASReadingActive <= ReadingActive;
+	--FBReadingActive <= ReadingActive;
+	
 end architecture rtl;
 		
 		

@@ -3,6 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity controller is
+	generic(
+		NBITS : natural := 6;
+		FRACBITS : natural := 4;
+		NBREG : natural := 59007
+	);
 	port(
 		clk : std_logic;
 		rstB : std_logic;
@@ -10,6 +15,7 @@ entity controller is
 		--interface with avalon slave
 		ASNNParamSet : in std_logic;
 		ASRTDataReady : in std_logic;
+		ASStatusCtrller : out std_logic_vector(2 downto 0);
 		
 		--interface with avalon master
 		AMFetchNNParam : out std_logic;
@@ -20,10 +26,14 @@ entity controller is
 		AMReadingActive: in std_logic; -- set to indicate Master is reading data from SDRAM
 		AMBurstCntrEnd : in std_logic;
 		AMNbBurstCntrEnd : in std_logic;
-		AMCtrlInitState : out std_logic
+		AMCtrlInitState : out std_logic;
 		
 		--interface with FIFO
-		FifoRdempty: in std_logic;
+		FifoRdempty: in std_logic;	
+		
+		--interface with fifo backend (FB)
+		FBStatusCtrller : out std_logic_vector(2 downto 0);
+		FBRegNumber : out std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
 		
 		);
 end entity controller;
@@ -33,9 +43,10 @@ architecture rtl of controller is
 	signal state_reg, state_next : state_type;
 	signal RTDataCntrEnd : std_logic;
 	signal paramCntrEnd : std_logic;
-	signal paramCntrReg, paramCntrNext : std_logic_vector(3 downto 0)
-	signal RTDataCntrReg, RTDataCntrNext : std_logic_vector(8 downto 0)
+	signal paramCntrReg, paramCntrNext : std_logic_vector(3 downto 0);
+	signal RTDataCntrReg, RTDataCntrNext : std_logic_vector(8 downto 0);
 	signal RTDataCntrEnable : std_logic;
+	signal StatusCtrller : std_logic_vector(2 downto 0);
 	--signal BurstFinished : std_logic;
 begin
 
@@ -64,28 +75,34 @@ begin
 		case state_reg is
 			when init =>
 									AMCtrlInitState <= '1';
+									StatusCtrller <= "000";
 									if ASNNParamSet = '1' then
 										state_next <= NNparamFetch;
 									end if;
 			when NNparamFetch =>
 									AMFetchNNParam <= '1';
 									AMFifoWriteAllow <= '1';
+									StatusCtrller <= "001";
 									if AMBurstCntrEnd then
 										state_next <= incParamCounter;
 									end if;
 			when incParamCounter =>
+									StatusCtrller <= "010";
 									state_next <= WaitForFifo
 			when WaitForFifo => 
+									StatusCtrller <= "011";
 									if paramCntrEnd and FifoRdempty = '1' then
 										state_next <= idle;
 									elsif FifoRdempty = '1' then
 										state_next <= NNparamFetch;
 									end if;
 			when idle =>
+									StatusCtrller <= "100";
 									if ASRTDataReady = '1' then
 										state_next <= RTdataFetch;
-									end if;
+									end if;S
 			when RTdataFetch =>
+									StatusCtrller <= "101";
 									AMFetchRTData <= '1';
 									AMFifoWriteAllow <= '1';
 									RTDataCntrEnable = '1';
@@ -94,7 +111,7 @@ begin
 									end if;
 			when others => state_next <= init;
 		end case;			
-	end proess NSL;
+	end process NSL;
 	
 	PARAM_CNTR: process(state_reg, paramCntrEnd, paramCntrReg)
 	paramCntrNext <= paramCntrReg;
@@ -115,4 +132,9 @@ begin
 			RTDataCntrNext <= "100100000"; -- 288 
 		end if;
 	end process RT_CNTR;
+	
+	-- distribute output signals
+	ASStatusCtrller <= StatusCtrller;
+	FBStatusCtrller <= StatusCtrller;
+	
 end architecture rtl;
