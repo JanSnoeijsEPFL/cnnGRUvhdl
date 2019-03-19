@@ -9,9 +9,9 @@ entity av_slave is
 		rstB : in std_logic;
 		readEn : in std_logic;
 		writeEn : in std_logic;
-		regAddress : in std_logic_vector(2 downto 0);
+		slaveAddr : in std_logic_vector(2 downto 0);
 		readdata : out std_logic_vector(31 downto 0);
-		writedata : in std_logic_vector(31 downto 0)
+		writedata : in std_logic_vector(31 downto 0);
 		
 		-- to avalon master
 		AMWriteAddr : out std_logic_vector(31 downto 0);
@@ -28,25 +28,24 @@ end entity av_slave;
 architecture rtl of av_slave is
 	-- avalon readable / writable registers
 	signal NNParamsetReg, NNParamsetNext : std_logic;
-	signal NNDataReadyReg, NNDataReadyNext : std_logic;
+	signal RTDataReadyReg, RTDataReadyNext : std_logic;
 	signal ReadingActiveReg, ReadingActiveNext : std_logic;
 	signal StatusCtrllerReg, StatusCtrllerNext : std_logic_vector(2 downto 0); -- not writable
 	signal ReadAddressReg, ReadAddressNext : std_logic_vector(31 downto 0);
-	signal WriteAddressReg, ReadAddressNext : std_logic_vector(31 downto 0);
-	
+	signal WriteAddressReg, WriteAddressNext : std_logic_vector(31 downto 0);
 begin
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then
 			NNParamsetReg <= '0';
-			NNDataReadyReg <= '0';
+			RTDataReadyReg <= '0';
 			ReadingActiveReg <= '0';
-			StatusCtrllerReg <= '0';
-			ReadAddressReg <= '0';
-			WriteAddressReg <= '0';
+			StatusCtrllerReg <= (others => '0');
+			ReadAddressReg <= (others => '0');
+			WriteAddressReg <= (others => '0');
 		elsif rising_edge(clk) then
 			NNParamsetReg <= NNParamsetNext;
-			NNDataReadyReg <= NNDataReadyNext;
+			RTDataReadyReg <= RTDataReadyNext;
 			ReadingActiveReg <= ReadingActiveNext;
 			StatusCtrllerReg <= StatusCtrllerNext;
 			ReadAddressReg <= ReadAddressNext;
@@ -54,40 +53,50 @@ begin
 		end if;
 	end process REG;
 	
-	READ: process(readEn, NNParamsetReg, NNDataReadyReg,ReadingActiveReg, StatusCtrllerReg, ReadAddressReg, WriteAddressReg, regAddress) --processor wants to read a register
+	READING: process(readEn, NNParamsetReg, RTDataReadyReg,ReadingActiveReg, StatusCtrllerReg, ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to read a register
 	begin
 		-- default
 		readdata <= (others => '0');
 		if readEn = '1' then
-			case regAddress is
-				when "000" => readdata(0) <= NNParamsetReg;
-								  readdata(1) <= NNDataReadyReg;
-				when "001" => readdata(0) <= ReadingActiveReg;
-								  readdata(3 downto 1) <= StatusCtrllerReg;
-				when "010" => readdata <= ReadAddressReg;
-				when "011" => readdata <= WriteAddressReg;
-				when others => null;
-			end case regAddress;
+			case slaveAddr is
+				when "000" => 
+					readdata(0) <= NNParamsetReg;
+					readdata(1) <= RTDataReadyReg;
+				when "001" => 
+					readdata(0) <= ReadingActiveReg;
+					readdata(3 downto 1) <= StatusCtrllerReg;
+				when "010" => 
+					readdata <= ReadAddressReg;
+				when "011" => 
+					readdata <= WriteAddressReg;
+				when others => 
+					readdata <= (others => '0');
+			end case;
 		end if;						  	
-	end process READ;
+	end process READING;
 	
-	WRITE: process(writeEn, writedata, NNParamsetReg, NNDataReadyReg, ReadAddressReg, WriteAddressReg, regAddress) --processor wants to write a register
+	WRITING: process(writeEn, writedata, NNParamsetReg, RTDataReadyReg, ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to write a register
 	begin
 		-- default
 		NNParamsetNext <= NNParamsetReg;
-		NNDataReadyNext <= NNDataReadyReg;
+		RTDataReadyNext <= RTDataReadyReg;
 		ReadAddressNext <= ReadAddressReg;
 		WriteAddressNext <= WriteAddressReg;
 		
 		if writeEn = '1' then
-			case regAddress is
-				when "000" => NNParamsetNext <= writedata(0);
-								  NNDataReadyNext <= writedata(1); 
-				when "010" => ReadAddressNext <= writedata;
-				when "011" => WriteAddressNext <= writedata;
-			end case regAddress;
+			case slaveAddr is
+				when "000" => 
+					NNParamsetNext <= writedata(0);
+					RTDataReadyNext <= writedata(1); 
+				when "010" => 
+					ReadAddressNext <= writedata;
+				when "011" => 
+					WriteAddressNext <= writedata;
+				when others =>
+					null;
+			end case;
 		end if;
-	end process WRITE;
+	end process WRITING;
 	
 	-- status
 	StatusCtrllerNext <= CtrlStatusCtrller;

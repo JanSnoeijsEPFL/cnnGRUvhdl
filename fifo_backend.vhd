@@ -36,11 +36,11 @@ entity fifo_backend is
 end entity fifo_backend;
 
 architecture rtl of fifo_backend is
-	signal CntrRegNumberReg, CntrRegNmberNext : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
+	signal CntrRegNumberReg, CntrRegNumberNext : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
 	signal RegData : std_logic_vector(29 downto 0);
 	signal RdreqFifo : std_logic;
-	constant CntrRegMax : std_logic_vector := std_logic_vector(to_unsigned(NBREG));
-	signal CntrRegNumberEnd : 
+	constant CntrRegMax : std_logic_vector := std_logic_vector(to_unsigned(NBREG, integer(ceil(log2(real(NBREG))))));
+	signal CntrRegNumberEnd : std_logic;
 begin
 
 	REG: process(clk, rstB)
@@ -63,16 +63,16 @@ begin
 	CNTR: process(FifoDataOut, RdreqFifo, CntrRegNumberReg, CntrRegNumberEnd)
 	begin
 		CntrRegNumberNext <= CntrRegNumberReg;
-		ParamRegNumber <= (others => '0');
+		ParamRegFileRegNumber <= (others => '0');
 		if RdreqFifo = '1' and CntrRegNumberEnd = '0' then
 			ParamRegFileRegNumber <= CntrRegNumberReg;
 			ParamRegFileWriteEn <= '1';
 			ParamRegFileDataIn <= FifoDataOut;
-			CntrRegNumberNext <= std_logic_vector(unsigned(CntrRegNumberReg + 1));
+			CntrRegNumberNext <= std_logic_vector(unsigned(CntrRegNumberReg) + 1);
 		end if;
 	end process CNTR;
 	
-	CntrRegNumberEnd <= '1' when CntrRegNumber = CntrRegMax else '0';
+	CntrRegNumberEnd <= '1' when CntrRegNumberReg = CntrRegMax else '0';
 	
 	-- output signals
 	FifoRdreq <= RdreqFifo;

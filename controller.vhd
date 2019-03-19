@@ -32,7 +32,7 @@ entity controller is
 		FifoRdempty: in std_logic;	
 		
 		--interface with fifo backend (FB)
-		FBStatusCtrller : out std_logic_vector(2 downto 0);
+		FBStatusCtrller : out std_logic_vector(2 downto 0)
 		-- done in fifo backend
 		--FBRegNumber : out std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
 		
@@ -84,15 +84,15 @@ begin
 									AMFetchNNParam <= '1';
 									AMFifoWriteAllow <= '1';
 									StatusCtrller <= "001";
-									if AMBurstCntrEnd then
+									if AMNbBurstCntrEnd = '1' then
 										state_next <= incParamCounter;
 									end if;
 			when incParamCounter =>
 									StatusCtrller <= "010";
-									state_next <= WaitForFifo
+									state_next <= WaitForFifo;
 			when WaitForFifo => 
 									StatusCtrller <= "011";
-									if paramCntrEnd and FifoRdempty = '1' then
+									if paramCntrEnd = '1' and FifoRdempty = '1' then
 										state_next <= idle;
 									elsif FifoRdempty = '1' then
 										state_next <= NNparamFetch;
@@ -101,12 +101,12 @@ begin
 									StatusCtrller <= "100";
 									if ASRTDataReady = '1' then
 										state_next <= RTdataFetch;
-									end if;S
+									end if;
 			when RTdataFetch =>
 									StatusCtrller <= "101";
 									AMFetchRTData <= '1';
 									AMFifoWriteAllow <= '1';
-									RTDataCntrEnable = '1';
+									RTDataCntrEnable <= '1';
 									if RTDataCntrEnd = '1' then
 										state_next <= idle;
 									end if;
@@ -115,8 +115,8 @@ begin
 	end process NSL;
 	
 	PARAM_CNTR: process(state_reg, paramCntrEnd, paramCntrReg)
-	paramCntrNext <= paramCntrReg;
 	begin
+		paramCntrNext <= paramCntrReg;
 		if state_reg = incParamCounter and paramCntrEnd = '0' then
 			paramCntrNext <= std_logic_vector(unsigned(paramCntrReg)-1);
 		end if;
@@ -125,9 +125,9 @@ begin
 	paramCntrEnd <= '1' when paramCntrReg = "0000" else '0';
 	
 	RT_CNTR: process(RTDataCntrEnd, RTDataCntrReg, AMBurstCntrEnd, RTDataCntrEnable)
-	RTDataCntrNext <= RTDataCntrReg;
 	begin
-		if AMBurstCntrEnd = '1' and RTDataCntrEnable and RTDataCntrEnd = '0' then
+		RTDataCntrNext <= RTDataCntrReg;
+		if AMBurstCntrEnd = '1' and RTDataCntrEnable = '1' and RTDataCntrEnd = '0' then
 			RTDataCntrNext <= std_logic_vector(unsigned(RTDataCntrReg)-1);
 		elsif RTDataCntrEnd = '1' then
 			RTDataCntrNext <= "100100000"; -- 288 

@@ -21,14 +21,14 @@ entity accelerator is
 		AMwriteEn : out std_logic;
 		AMreaddata : in std_logic_vector(31 downto 0);
 		AMwritedata : out std_logic_vector(31 downto 0);
-		AMaddressRead : out std_logic_vector(31 downto 0);
-		AMaddressWrite : out std_logic_vector(31 downto 0);
+		AMaddress : out std_logic_vector(31 downto 0);
 		AMbyteenable : out std_logic_vector(3 downto 0);
+		AMreaddatavalid : in std_logic;
 		
 		-- avalon slave
 		ASreadEn : in std_logic;
 		ASwriteEn : in std_logic;
-		ASregAddress : in std_logic_vector(2 downto 0);
+		ASslaveAddr : in std_logic_vector(2 downto 0);
 		ASreaddata : out std_logic_vector(31 downto 0);
 		ASwritedata : in std_logic_vector(31 downto 0)
 	);
@@ -37,52 +37,53 @@ end entity accelerator;
 architecture rtl of accelerator is
 	
 	-- AV master - AV slave
-	ASReadAddr : std_logic_vector(31 downto 0); -- read address in SDRAM for data fetching
-	ASWriteAddr : std_logic_vector(31 downto 0); -- write address in SDRAM for writing results of algorithm
-	ASReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
+	signal ASReadAddr : std_logic_vector(31 downto 0); -- read address in SDRAM for data fetching
+	signal ASWriteAddr : std_logic_vector(31 downto 0); -- write address in SDRAM for writing results of algorithm
+	signal ASReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
 	
 	--dcfifo write interface
-	FifoDataIn : std_logic_vector(31 downto 0);
-	FifoWrreq : std_logic;
-	FifoWrclk : std_logic;
-	FifoWrempty : std_logic;
-	FifoWrfull : std_logic;
+	signal FifoDataIn : std_logic_vector(31 downto 0);
+	signal FifoWrreq : std_logic;
+	signal FifoWrclk : std_logic;
+	signal FifoWrempty : std_logic;
+	signal FifoWrfull : std_logic;
 	
 	--dcfifo read interface
-	FifoDataOut : std_logic_vector(31 downto 0);
-	FifoRdreq : std_logic;
-	FifoRdclk : std_logic;
-	FifoRdempty : std_logic;
+	signal FifoDataOut : std_logic_vector(31 downto 0);
+	signal FifoRdreq : std_logic;
+	signal FifoRdclk : std_logic;
+	signal FifoRdempty : std_logic;
 	
 	--AV master - Controller
-	CtrlFetchNNParam : std_logic; --signal to allow reading parameters from SDRAM (should be kept at 1 for the whole duration)
-	CtrlFetchRTData : std_logic; --signal to allow fetching RT data
-	CtrlFifoWriteAllow : std_logic; -- allow writing data to FIFO
-	CtrlFifoWriting : std_logic; -- indicates data is being written in FIFO
-	CtrlWriteResult : std_logic; -- allows writing result to SDRAM
-	CtrlReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
-	CtrlBurstCntrEnd : std_logic;
-	CtrlNbBurstCntrEnd : std_logic; -- tells controller when NbBursts completed
-	CtrlInitState : std_logic; -- controller is in init state if this signal equals to 1
+	signal CtrlFetchNNParam : std_logic; --signal to allow reading parameters from SDRAM (should be kept at 1 for the whole duration)
+	signal CtrlFetchRTData : std_logic; --signal to allow fetching RT data
+	signal CtrlFifoWriteAllow : std_logic; -- allow writing data to FIFO
+	signal CtrlFifoWriting : std_logic; -- indicates data is being written in FIFO
+	signal CtrlWriteResult : std_logic; -- allows writing result to SDRAM
+	signal CtrlReadingActive: std_logic; -- set to indicate Master is reading data from SDRAM	
+	signal CtrlBurstCntrEnd : std_logic;
+	signal CtrlNbBurstCntrEnd : std_logic; -- tells controller when NbBursts completed
+	signal CtrlInitState : std_logic; -- controller is in init state if this signal equals to 1
 	
 	--av slave - controller
-	CtrlNNParamset : std_logic; -- set by proc to indicate parameters are ready in SDRAM
-	CtrlRTDataReady:  std_logic; -- set by proc to indicate new RT data is ready in SDRAM
-	CtrlStatusCtrller : std_logic_vector(2 downto 0) -- status of controller for processor checks
+	signal CtrlNNParamset : std_logic; -- set by proc to indicate parameters are ready in SDRAM
+	signal CtrlRTDataReady:  std_logic; -- set by proc to indicate new RT data is ready in SDRAM
+	signal CtrlStatusCtrller : std_logic_vector(2 downto 0); -- status of controller for processor checks
 	
 	-- fifo backend
-	ParamRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	ParamRegFileWriteEn : std_logic;
-	ParamRegFileRegNumber : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
+	signal ParamRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	signal ParamRegFileWriteEn : std_logic;
+	signal ParamRegFileRegNumber : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
 	
 	-- param reg file (debug regfile data)
-	ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	signal ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	
-	XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	signal XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	signal XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	-- signal from classifier
-	ClassSeqClass: std_logic; -- sequence classification result
+	signal ClassSeqClass: std_logic; -- sequence classification result
 	
+	signal IntRegNb : integer;
 	component fifo_1
 		port
 		(
@@ -97,7 +98,6 @@ architecture rtl of accelerator is
 		);
 	end component;
 
-end component;
 begin
 	fifo_1_inst : fifo_1 port map (
 		data	 => FifoDataIn,
@@ -120,15 +120,14 @@ begin
 		clk => clk,
 		rstB => rstB,
 		burstcount => AMburstcount,
-		waitrequest => AMwaitrequest
+		waitrequest => AMwaitrequest,
 		readEn => AMreadEn,
 		writeEn => AMwriteEn,
 		readdata => AMreaddata,
 		writedata => AMwritedata,
-		addressRead => AMaddressRead,
-		addressWrite => AMaddressWrite,
+		address => AMaddress,
 		byteenable => AMbyteenable,
-		
+		readdatavalid => AMreaddatavalid,
 		ASReadAddr => ASReadAddr,
 		ASWriteAddr => ASWriteAddr,
 		ASReadingActive => ASReadingActive,
@@ -136,7 +135,8 @@ begin
 		FifoDataIn => FifoDataIn,
 		FifoWrreq => FifoWrreq,
 		FifoWrfull => FifoWrfull,
-
+		
+		CtrlFetchNNParam => CtrlFetchNNParam,
 		CtrlFetchRTData => CtrlFetchRTData,
 		CtrlFifoWriteAllow => CtrlFifoWriteAllow,
 		CtrlFifoWriting => CtrlFifoWriting,
@@ -144,7 +144,7 @@ begin
 		CtrlReadingActive => CtrlReadingActive,
 		CtrlBurstCntrEnd => CtrlBurstCntrEnd,
 		CtrlNbBurstCntrEnd => CtrlNbBurstCntrEnd,
-		CtrlInitState => CntrlInitState,
+		CtrlInitState => CtrlInitState,
 		ClassSeqClass => ClassSeqClass
 		);
 	
@@ -154,7 +154,7 @@ begin
 		rstB => rstB,
 		readEn => ASreadEn,
 		writeEn => ASwriteEn,
-		regAddress => ASregAddress,
+		slaveAddr => ASslaveAddr,
 		readdata => ASreaddata,
 		writedata => ASwritedata,
 	
@@ -202,11 +202,11 @@ begin
 		rstB => rstB,
 		
 		ASNNParamSet => CtrlNNParamSet,
-		ASRTDataReady => CtrlDataready,
+		ASRTDataReady => CtrlRTDataReady,
 		ASStatusCtrller => CtrlStatusCtrller,
 		
 		AMFetchNNParam => CtrlFetchNNParam,
-		AMFetchRTData => CtrlFecthRTData,
+		AMFetchRTData => CtrlFetchRTData,
 		AMFifoWriteAllow => CtrlFifoWriteAllow,
 		AMFifoWriting => CtrlFifoWriting,
 		AMWriteResult => CtrlWriteResult,
@@ -229,9 +229,10 @@ begin
 	port map(
 		clk => clk,
 		rstB => rstB,
-		dataIn => ParamRegFileDataIn,
-		dataOut => ParamRegFileDataOut,
-		writeEn => ParamRegFileWriteEn
+		dataIn(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataIn,
+		dataOut(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataOut,
+		writeEn(IntRegNb) => ParamRegFileWriteEn
 	);
 	
+	IntRegNb <= to_integer(unsigned(ParamRegFileRegNumber));
 end architecture rtl;
