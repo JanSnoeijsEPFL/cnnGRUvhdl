@@ -114,26 +114,30 @@ begin
 		end if;
 	end process NB_BURSTS_CNTR;
 	
-	BURST_READ : process(waitrequest, readdata, ReadAddressReg, FifoWriting, CtrlFetchNNparam, CtrlFetchRTData)
+	BURST_READ_WRITE : process(waitrequest, readdata, ReadAddressReg, FifoWriting, CtrlFetchNNparam, CtrlFetchRTData, ClassSeqClass, CtrlWriteResult, ASWriteAddr)
 	begin -- all Ctrl signals should be synchronous
 		readEn <= '0';
+		writeEn <= '0';
 		byteenable <= "1111";
 		burstcount <= "1000";
 		address <= (others => '0');
+		writedata <= (others => '0');
 		ReadingActive <= '0';
 		BurstCntrEn <= '0';
-		if waitrequest = '0' and (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') then --if access granted from avalon
-			if FifoWriting = '1' then -- if allowed access to FIFO we can fetch data
-				readEn <= '1';
-				address <= ReadAddressReg;
-				if readdatavalid = '1' then
-					FifoDataIn <= readdata;
-					ReadingActive <= '1';
-					BurstCntrEn <= '1';
-				end if;
+		if waitrequest = '0' and (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') and FifoWriting = '1' then --if access granted from avalon
+			readEn <= '1';
+			address <= ReadAddressReg;
+			if readdatavalid = '1' then
+				FifoDataIn <= readdata;
+				ReadingActive <= '1';
+				BurstCntrEn <= '1';
 			end if;
+		elsif waitrequest = '0' and CtrlWriteResult = '1' and FifoWriting = '0' then
+			writeEn <= '1';
+			address <= ASWriteAddr;
+			writedata(0) <= ClassSeqClass;
 		end if;
-	end process BURST_READ;
+	end process BURST_READ_WRITE;
 	
 	FIFO_CTRL : process(FifoWrfull, CtrlFifoWriteAllow)
 	begin
@@ -144,19 +148,6 @@ begin
 			FifoWriting <= '1';
 		end if;
 	end process FIFO_CTRL;
-	
-	WRITING : process(clk, waitrequest, ClassSeqClass, CtrlWriteResult, ASWriteAddr)
-	begin
-		writeEn <= '0';
-		byteenable <= "1111";
-		address <= (others => '0');
-		writedata <= (others => '0');
-		if waitrequest = '0' and CtrlWriteResult = '1' then
-			writeEn <= '1';
-			address <= ASWriteAddr;
-			writedata(0) <= ClassSeqClass;
-		end if;
-	end process WRITING ;
 	
 	-- output signals 
 	CtrlFifoWriting <= FifoWriting;

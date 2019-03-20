@@ -7,7 +7,7 @@ entity param_reg_file is
 	generic(
 		NBITS : natural := 6;
 		FRACBITS : natural := 4;
-		NBREG : natural := 59007
+		NBREG : natural := 3600
 		--NBPARAM : natural := 354013;
 		--NBCONV : natural := 2;
 		--NBWGRU : natural :=  17967;  -- x3 -- overlap between lines of matrices

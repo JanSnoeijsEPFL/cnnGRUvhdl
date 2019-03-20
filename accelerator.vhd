@@ -8,7 +8,10 @@ entity accelerator is
 		NBITS : natural := 6;
 		FRACBITS : natural := 4;
 		NACC : natural := 11;
-		NBREG : natural := 59007
+		WGruOCRamWordSize : natural := 600;
+		WGruOCRamNbWords : natural := 3234;
+		UGruOCRamWordSize : natural := 600;
+		UGruOCRamNbWords : natural := 302
 	);
 	port(
 		clk : in std_logic;
@@ -71,15 +74,32 @@ architecture rtl of accelerator is
 	signal CtrlStatusCtrller : std_logic_vector(2 downto 0); -- status of controller for processor checks
 	
 	-- fifo backend
-	signal ParamRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	signal ParamRegFileWriteEn : std_logic;
-	signal ParamRegFileRegNumber : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
+	signal WGruOCRamAddress_a : std_logic_vector(integer(ceil(log2(real(WGruOCRamNbWords))))-1 downto 0); --10 bits
+	signal WGruOCRamAddress_a : std_logic_vector(integer(ceil(log2(real(WGRUOCRamNbWords))))-1 downto 0);
+	signal WGruOCRamDataIn_a : std_logic_vector(WGruOCRamWordSize -1 downto 0);
+	signal WGruOCRamDataIn_b : std_logic_vector(WGruOCRamWordSize -1 downto 0);
+	signal WGruOCRamWren_a : std_logic;
+	signal WGruOCRamWren_b : std_logic;
+	
+	signal UGruOCRamAddress_a : std_logic_vector(integer(ceil(log2(real(UGruOCRamNbWords))))-1 downto 0); --10 bits
+	signal UGruOCRamAddress_a : std_logic_vector(integer(ceil(log2(real(UGRUOCRamNbWords))))-1 downto 0);
+	signal UGruOCRamDataIn_a : std_logic_vector(UGruOCRamWordSize -1 downto 0);
+	signal UGruOCRamDataIn_b : std_logic_vector(UGruOCRamWordSize -1 downto 0);
+	signal UGruOCRamWren_a : std_logic;
+	signal UGruOCRamWren_b : std_logic;
+	
+	-- RAMs outputs
+	signal WGruOCRamDataOut_a : std_logic_vector(WGruOCramWordSize -1 downto 0);
+	signal WGruOCRamDataOut_b : std_logic_vector(WGruOCramWordSize -1 downto 0);
+	signal UGruOCRamDataOut_a : std_logic_vector(UGruOCramWordSize -1 downto 0);
+	signal UGruOCRamDataOut_b : std_logic_vector(UGruOCramWordSize -1 downto 0);
+	
 	
 	-- param reg file (debug regfile data)
-	signal ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	--signal ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	
-	signal XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	signal XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	--signal XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+	--signal XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
 	-- signal from classifier
 	signal ClassSeqClass: std_logic; -- sequence classification result
 	
@@ -97,6 +117,36 @@ architecture rtl of accelerator is
 			wrfull		: out std_logic 
 		);
 	end component;
+	
+	component gruWRAM
+		port
+		(
+			address_a		: in std_logic_vector (8 downto 0);
+			address_b		: in std_logic_vector (8 downto 0);
+			clock		: in std_logic  := '1';
+			data_a		: in std_logic_vector (99 downto 0);
+			data_b		: in std_logic_vector (99 downto 0);
+			wren_a		: in std_logic  := '0';
+			wren_b		: in std_logic  := '0';
+			q_a		: out std_logic_vector (99 downto 0);
+			q_b		: out std_logic_vector (99 downto 0)
+		);
+	end component;
+	
+	component gruURAM
+		port
+		(
+			address_a		: in std_logic_vector (8 downto 0);
+			address_b		: in std_logic_vector (8 downto 0);
+			clock		: in std_logic  := '1';
+			data_a		: in std_logic_vector (99 downto 0);
+			data_b		: in std_logic_vector (99 downto 0);
+			wren_a		: in std_logic  := '0';
+			wren_b		: in std_logic  := '0';
+			q_a		: out std_logic_vector (99 downto 0);
+			q_b		: out std_logic_vector (99 downto 0)
+		);
+	end component;
 
 begin
 	fifo_1_inst : fifo_1 port map (
@@ -110,6 +160,30 @@ begin
 		wrfull	 => FifoWrfull
 	);
 	
+	gruWRAM_inst : gruWRAM port map(
+		address_a	 => WGruOCRamAddress_a,
+		address_b	 => WGruOCRamAddress_b,
+		clock	 => clk,
+		data_a	 => WGruOCRamDataIn_a,
+		data_b	 => WGruOCRamDataIn_b,
+		wren_a	 => WGruWren_a,
+		wren_b	 => WGruWren_b,
+		q_a	 => WGruOCRamDataOut_a,
+		q_b	 => WGruOCRamDataOut_b
+	);
+		
+	gruURAM : gruURAM port map(
+		address_a	 => UGruOCRamAddress_a,
+		address_b	 => UGruOCRamAddress_b,
+		clock	 => clk,
+		data_a	 => UGruOCRamDataIn_a,
+		data_b	 => UGruOCRamDataIn_b,
+		wren_a	 => UGruWren_a,
+		wren_b	 => UGruWren_b,
+		q_a	 => UGruOCRamDataOut_a,
+		q_b	 => UGruOCRamDataOut_b
+	);
+		
 	av_master_inst : entity work.av_master(rtl) 
 	generic map(
 		NBITS => NBITS,
@@ -171,7 +245,10 @@ begin
 	generic map(
 		NBITS => NBITS,
 		FRACBITS => FRACBITS,
-		NBREG => NBREG
+		WGruOCRamWordSize : natural := 539,
+		WGruOCRamNbWords : natural := 600,
+		UGruOCRamWordSize : natural := 100,
+		UGruOCRamNbWords : natural := 303
 	)
 	port map(
 		clk => clk,
@@ -180,14 +257,19 @@ begin
 		FifoDataOut => FifoDataOut,
 		FifoRdreq => FifoRdreq,
 		FifoRdempty => FifoRdempty,
-	
-		ParamRegFileDataIn => ParamRegFileDataIn,
-		ParamRegFileWriteEn => ParamRegFileWriteEn,
-		ParamRegFileRegNumber => ParamRegFileRegNumber,
-	
-		XRegFileDataIn => XRegFileDataIn,
-		XRegFileWriteEn => XRegFileWriteEn,
-
+		WGruOCRamAddress_a => WGruOCRamAddress_a,
+		WGruOCRamAddress_b => WGruOCRamAddress_b,
+		WGruOCRamDataIn_a => WGruOCRamDataIn_a,
+		WGruOCRamDataIn_b => WGruOCRamDataIn_b,
+		WGruOCRamWren_a => WGruOCRamWren_a,
+		WGruOCRamWren_b => WGruOCRamWren_b,
+		
+		UGruOCRamAddress_a => UGruOCRamAddress_a,
+		UGruOCRamAddress_b => UGruOCRamAddress_b,
+		UGruOCRamDataIn_a => UGruOCRamDataIn_a,
+		UGruOCRamDataIn_b => UGruOCRamDataIn_b,
+	   UGruOCRamWren_a => UGruOCRamWren_a,
+		UGruOCRamWren_b => UGruOCRamWren_b,
 		CtrlStatusCtrller => CtrlStatusCtrller
 	);
 	
@@ -220,19 +302,20 @@ begin
 		FBStatusCtrller => CtrlStatusCtrller
 	);
 	
-	param_reg_file_inst : entity work.param_reg_file(rtl)
-	generic map(
-		NBITS => NBITS,
-		FRACBITS => FRACBITS,
-		NBREG => NBREG
-	)
-	port map(
-		clk => clk,
-		rstB => rstB,
-		dataIn(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataIn,
-		dataOut(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataOut,
-		writeEn(IntRegNb) => ParamRegFileWriteEn
-	);
+	--param_reg_file_inst : entity work.param_reg_file(rtl)
+	--generic map(
+	--	NBITS => NBITS,
+	--	FRACBITS => FRACBITS,
+		--NBREG => NBREG
+	--)
+	--port map(
+		--clk => clk,
+		--rstB => rstB,
+		--dataIn(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataIn,
+		--dataOut(IntRegNb*(NBITS-1)*NBITS-1+(NBITS-1)*NBITS downto IntRegNb*(NBITS-1)*NBITS) => ParamRegFileDataOut,
+		--writeEn(IntRegNb) => ParamRegFileWriteEn
+	--);
 	
+
 	IntRegNb <= to_integer(unsigned(ParamRegFileRegNumber));
 end architecture rtl;
