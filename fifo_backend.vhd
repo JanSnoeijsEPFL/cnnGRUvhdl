@@ -7,13 +7,13 @@ entity fifo_backend is
 	generic(
 		NBITS : natural := 6;
 		FRACBITS : natural := 4;
+		NBCONVREG : natural := 10;
 		WGruOCRamWordSize : natural := 600;
 		WGruOCRamNbWords : natural := 3234;
 		UGruOCRamWordSize : natural := 600;
 		UGruOCRamNbWords : natural := 307;
-		MAX_VAL_buffer : natural := integer(ceil(600/32)); --19
-		MAX_VAL_conv : natural := 10;
-		--MAX_VAL_GruW : natural :=  integer())
+		MAX_VAL_buffer : natural :=  19; -- integer(ceil(600* 1 / 32)); --19
+		MAX_VAL_conv : natural := 2 --integer(ceil(10*6* 1 / 32)) --2 
 	);
 	
 	port(
@@ -42,17 +42,20 @@ entity fifo_backend is
 	   UGruOCRamWren_a : out std_logic;
 		UGruOCRamWren_b : out std_logic;
 		
-		--interface with x reg file
-	--	XRegFileDataIn : out std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-		--XRegFileWriteEn : out std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+		-- interface with conv Reg File
+		ConvRegIn : out std_logic_vector(NBCONVREG*NBITS-1 downto 0);
+		--ConvRegOut : in std_logic_vector(NBCONVREG*NBITS-1 downto 0);
+		ConvWriteEn : out std_logic_vector(NBCONVREG-1 downto 0);
 		
 		-- interface with controller
+		CtrlFifoReadParam : in std_logic;
 		CtrlStatusCtrller : in std_logic_vector(2 downto 0)
 		--CtrlRegNumber : in std_logic_vector(intege			FifoDataOut : std_logic_vector(31 downto 0);
 	);
 end entity fifo_backend;
 
 architecture rtl of fifo_backend is
+
 	--signal CntrRegNumberReg, CntrRegNumberNext : std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0);
 	signal RegData : std_logic_vector(29 downto 0);
 	signal RdreqFifo : std_logic;
@@ -60,26 +63,32 @@ architecture rtl of fifo_backend is
 	--signal CntrRegNumberEnd : std_logic;
 	type state_type is (idle, convStore, bufferLineW, GruW, bufferLineU, GruU);
 	signal stateReg, stateNext : state_type;
-	
+	signal BufferReg, BufferNext : std_logic_vector(WGruOCRamWordSize-1 downto 0);
 	--counters
 	signal CntrConvEnable : std_logic;
 	signal CntrConvEnd : std_logic;
+	signal CntrConvVal : std_logic_vector(integer(ceil(log2(real(MAX_VAL_conv))))-1 downto 0);
 	signal CntrBufferEnable : std_logic;
 	signal CntrBufferEnd : std_logic;
 	signal CntrBufferReset : std_logic;
+	signal CntrBufferVal : std_logic_vector(integer(ceil(log2(real(MAX_VAL_buffer))))-1 downto 0);
 	signal CntrGruWEnable : std_logic;
 	signal CntrGruWEnd : std_logic;
+	signal CntrGruWVal : std_logic_vector(integer(ceil(log2(real(WGruOCRamNbWords))))-1 downto 0);
 	signal CntrGruUEnable : std_logic;
 	signal CntrGruUEnd : std_logic;
+	signal CntrGruUVal : std_logic_vector(integer(ceil(log2(real(UGruOCRamNbWords))))-1 downto 0);
 	
 begin
 
 	REG: process(clk, rstB)
 	begin
-		if rstB = '0' then
-			CntrRegNumberReg <= (others => '0');
+		if rstB = '0' then 
+			stateReg <= idle;
+			BufferReg <= (others => '0');
 		elsif rising_edge(clk) then
-			CntrRegNumberReg <= CntrRegNumberNext;
+			BufferReg <= BufferNext;
+			stateReg <= stateNext;
 		end if;
 	end process REG;
 	
@@ -92,14 +101,17 @@ begin
 		CntrBufferReset <= '0';
 		stateNext <= stateReg;
 		RdreqFifo <= '0';
+		ConvWriteEn <= (others => '0');
 		case stateReg is
 			when idle =>
 							if CtrlFifoReadParam = '1' then
 								stateNext <= convStore;
+							end if;
 			when convStore =>
 							if FifoRdempty = '0' then
 								RdreqFifo <= '1';
-								ConvReg <= FifoDataOut;
+								ConvWriteEn <= std_logic_vector(shift_left(to_unsigned(1, NBCONVREG),to_integer(unsigned(CntrConvVal))));
+								ConvRegIn(29+to_integer(unsigned(CntrConvVal)) downto to_integer(unsigned(CntrConvVal))) <= FifoDataOut(29 downto 0);
 								CntrConvEnable <= '1';
 							end if;
 							if CntrConvEnd = '1' then
@@ -117,9 +129,9 @@ begin
 							CntrBufferReset <= '1';
 							CntrGruWEnable <= '1';
 							if CntrGruWEnd = '1' then
-								state_next <= bufferLineU;
+								stateNext <= bufferLineU;
 							else
-								state_next <= bufferLineW;
+								stateNext <= bufferLineW;
 							end if;
 			when bufferLineU =>
 							if FifoRdempty = '0' then
@@ -133,11 +145,11 @@ begin
 							CntrBufferReset <= '1';
 							CntrGruUEnable <= '1';
 							if CntrGruUEnd = '1' then
-								state_next <= idle; 
+								stateNext <= idle; 
 							else
-								state_next <= bufferLineW;
+								stateNext <= bufferLineW;
 							end if;
-							
+		end case;	
 	end process FSM;
 		
 	cntrConv_inst : entity work.counter(rtl)
@@ -149,6 +161,7 @@ begin
 			rstB => rstB,
 			CntrEnable => CntrConvEnable,
 			CntrReset => '0',
+			CntrVal => CntrConvVal,
 			CntrEnd => CntrConvEnd
 		);
 	
@@ -161,6 +174,7 @@ begin
 			rstB => rstB,
 			CntrEnable => CntrBufferEnable,
 			CntrReset => CntrBufferReset,
+			CntrVal => CntrBufferVal,
 			CntrEnd => CntrBufferEnd
 		);
 	
@@ -173,10 +187,11 @@ begin
 			rstB => rstB,
 			CntrEnable => CntrGruWEnable,
 			CntrReset => '0',
+			CntrVal => CntrGruWVal,
 			CntrEnd => CntrGruWEnd
 		);
 	
-	cntrGruW_inst : entity work.counter(rtl)
+	cntrGruU_inst : entity work.counter(rtl)
 		generic map(
 			MAX_VAL => UGruOCRamNbWords
 		)
@@ -185,9 +200,38 @@ begin
 			rstB => rstB,
 			CntrEnable => CntrGruUEnable,
 			CntrReset => '0',
+			CntrVal => CntrGruUVal,
 			CntrEnd => CntrGruUEnd
 		);
 		
+	BUFFERING: process(CntrBufferEnable, stateReg, CntrBufferVal, FifoDataOut)
+	begin
+		BufferNext <= BufferReg;
+		if CntrBufferEnable = '1' then
+			if stateReg = BufferLineW then
+				BufferNext(29+to_integer(unsigned(CntrBufferVal)) downto to_integer(unsigned(CntrBufferVal))) <= FifoDataOut(29 downto 0);
+			end if;
+		end if;
+	end process BUFFERING;
+	
+	RAM_WRITE : process(stateReg, CntrGruWVal, CntrGruUVal, BufferReg)
+	begin
+		WGruOCRamWren_a <= '0';
+		WGruOCRamWren_b <= '0';
+		UGruOCRamWren_a <= '0';
+		UGruOCRamWren_b <= '0';
+		--WGruOCRamAddress_b <= (others => '0');
+		WGruOCRamAddress_a <= (others => '0');
+		UGruOCRamAddress_a <= (others => '0');
+		if stateReg = GruW then
+			WGruOCRamWren_a <= '1';
+			WGruOCRamAddress_a <= CntrGruWVal;
+		elsif stateReg = GruU then
+			UGruOCRamWren_a <= '1';
+			UGruOCRamAddress_a <= CntrGruUVal;
+		end if;
+		WGruOCRamDataIn_a <= BufferReg; 
+	end process RAM_WRITE;
 	-- output signals
 	FifoRdreq <= RdreqFifo;
 	

@@ -5,8 +5,7 @@ use ieee.numeric_std.all;
 entity controller is
 	generic(
 		NBITS : natural := 6;
-		FRACBITS : natural := 4;
-		NBREG : natural := 59007
+		FRACBITS : natural := 4
 	);
 	port(
 		clk : std_logic;
@@ -15,7 +14,7 @@ entity controller is
 		--interface with avalon slave
 		ASNNParamSet : in std_logic;
 		ASRTDataReady : in std_logic;
-		ASStatusCtrller : out std_logic_vector(2 downto 0);
+		
 		
 		--interface with avalon master
 		AMFetchNNParam : out std_logic;
@@ -30,12 +29,11 @@ entity controller is
 		
 		--interface with FIFO
 		FifoRdempty: in std_logic;	
-		
 		--interface with fifo backend (FB)
-		FBStatusCtrller : out std_logic_vector(2 downto 0)
+		FBFifoReadParam : out std_logic;
+	
 		-- done in fifo backend
-		--FBRegNumber : out std_logic_vector(integer(ceil(log2(real(NBREG))))-1 downto 0)
-		
+		StatusCtrller : out std_logic_vector(2 downto 0)
 		);
 end entity controller;
 
@@ -73,6 +71,7 @@ begin
 		AMFifoWriteAllow <= '0';
 		AMFetchNNParam <= '0';
 		AMFetchRTData <= '0';
+		FBFifoReadParam <= '0';
 		case state_reg is
 			when init =>
 									AMCtrlInitState <= '1';
@@ -84,13 +83,16 @@ begin
 									AMFetchNNParam <= '1';
 									AMFifoWriteAllow <= '1';
 									StatusCtrller <= "001";
+									FBFifoReadParam <= '1';
 									if AMNbBurstCntrEnd = '1' then
 										state_next <= incParamCounter;
 									end if;
 			when incParamCounter =>
+									FBFifoReadParam <= '1';
 									StatusCtrller <= "010";
 									state_next <= WaitForFifo;
 			when WaitForFifo => 
+									FBFifoReadParam <= '1';
 									StatusCtrller <= "011";
 									if paramCntrEnd = '1' and FifoRdempty = '1' then
 										state_next <= idle;

@@ -17,10 +17,10 @@ entity counter is
 	);
 end entity counter;
 
-architecture rtl of counter
+architecture rtl of counter is
 	constant CntrMax : std_logic_vector(integer(ceil(log2(real(MAX_VAL))))-1 downto 0) := std_logic_vector(to_unsigned(MAX_VAL, integer(ceil(log2(real(MAX_VAL))))));
 	signal CntrReg, CntrNext : std_logic_vector(integer(ceil(log2(real(MAX_VAL))))-1 downto 0);
-	
+	signal CntrEndInternal : std_logic;
 begin
 	
 	REG: process(clk, rstB)
@@ -32,16 +32,17 @@ begin
 		end if;
 	end process REG;
 		
-	CNTR: process(CntrReg, CntrEnd, CntrEnable, CntrReset)
+	CNTR: process(CntrReg, CntrEndInternal, CntrEnable, CntrReset)
 	begin
 		CntrNext <= CntrReg;
-		if CntrEnable = '1' and CntrEnd = '0' then
+		if CntrEnable = '1' and CntrEndInternal = '0' then
 			CntrNext <= std_logic_vector(unsigned(CntrReg) + 1);
-		elsif CntrReset = '1' or CntrEnd = '1' then
+		elsif CntrReset = '1' or CntrEndInternal = '1' then
 			CntrNext <= (others => '0');
+		end if;
 	end process CNTR;
 	
 	CntrVal <= CntrReg;
-	CntrEnd <= '1' when CntrReg = CntrMax else '0';
-	
+	CntrEndInternal <= '1' when CntrReg = CntrMax else '0';
+	CntrEnd <= CntrEndInternal;
 end architecture rtl;
