@@ -135,6 +135,10 @@ architecture rtl of DE10_Standard is
 	signal DRAM_LOCKED_EXPORT : std_logic;
 	component base_hps is
 		port (
+			accelerator_0_conduit_end_debug1  : out   std_logic;                                        --   accelerator_0_conduit_end.debug1
+			accelerator_0_conduit_end_debug2  : out   std_logic;                                        --                            .debug2
+			accelerator_0_conduit_end_debug3  : out   std_logic;                                        --                            .debug3
+			accelerator_0_conduit_end_debug4  : out   std_logic;                                        --                            .debug4
 			clk_clk                         : in    std_logic                     := 'X';             -- clk
 			hps_io_hps_io_emac1_inst_TX_CLK : out   std_logic;                                        -- hps_io_emac1_inst_TX_CLK
 			hps_io_hps_io_emac1_inst_TXD0   : out   std_logic;                                        -- hps_io_emac1_inst_TXD0
@@ -200,6 +204,11 @@ begin
 
 	u0 : component base_hps
 		port map (
+		
+			accelerator_0_conduit_end_debug1 => GPIO(0),                                     --   accelerator_0_conduit_end.debug1
+			accelerator_0_conduit_end_debug2 => GPIO(1),                                       --                            .debug2
+			accelerator_0_conduit_end_debug3 => GPIO(2),                                     --                            .debug3
+			accelerator_0_conduit_end_debug4 => GPIO(3),                                     --                            .debug4
 			clk_clk                         => CLOCK_50,                         --    clk.clk
 			hps_io_hps_io_emac1_inst_TX_CLK => HPS_ENET_GTX_CLK,       -- hps_io.hps_io_emac0_inst_TX_CLK
 			hps_io_hps_io_emac1_inst_TXD0   => HPS_ENET_TX_DATA(0),   --       .hps_io_emac0_inst_TXD0

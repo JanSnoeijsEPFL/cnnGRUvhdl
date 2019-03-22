@@ -1,11 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity av_master is
 	generic(
 		NBITS : natural := 6;
-		FRACBITS : natural := 4
+		FRACBITS : natural := 4;
+		BURST_LENGTH : natural := 8;
+		NB_BURSTS : natural := 625
 		);
 	port(
 	
@@ -55,64 +58,77 @@ architecture rtl of av_master is
 -- internal signals declaration
 	--addrWriteReg, addrWriteNext: std_logic_vector(31 downto 0);
 	signal ReadAddressReg, ReadAddressNext: std_logic_vector(31 downto 0);
-	signal BurstCntrReg, BurstCntrNext: std_logic_vector(3 downto 0);
-	signal NbBurstCntrReg, NbBurstCntrNext: std_logic_vector(9 downto 0);
+	--signal BurstCntrReg, BurstCntrNext: std_logic_vector(3 downto 0);
+	--signal NbBurstCntrReg, NbBurstCntrNext: std_logic_vector(9 downto 0);
 	signal FifoWriting : std_logic;
-	signal BurstCntrEn : std_logic;
+	
+	signal CntrBurstEnable : std_logic;
+	signal CntrBurstEnd : std_logic;
+	signal CntrBurstVal : std_logic_vector(integer(ceil(log2(real(BURST_LENGTH))))-1 downto 0);
+	signal CntrBurstReset : std_logic;
+	
+	signal CntrNbBurstEnable : std_logic;
+	signal CntrNbBurstEnd : std_logic;
+	signal CntrNbBurstVal : std_logic_vector(integer(ceil(log2(real(NB_BURSTS))))-1 downto 0);
+	signal CntrNbBurstReset : std_logic; 
+	
 	signal ReadingActive : std_logic;
-	signal BurstCntrEnd : std_logic;
 	signal NbBurstCntrEnd : std_logic;
+	
 begin 
 	
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then
 			ReadAddressReg <= (others => '0');
-			BurstCntrReg <= "1000"; --8
-			NbBurstCntrReg <= "1001101100"; --620
 		elsif rising_edge(clk) then
 			ReadAddressReg <= ReadAddressNext;
-			BurstCntrReg <= BurstCntrNext;
-			NbBurstCntrReg <= NbBurstCntrNext;
 		end if;
 	end process;
 	
-	BURST_CNTR: process(BurstCntrReg, BurstCntrEn)
-	begin
-		BurstCntrNext <= BurstCntrReg;
-		if BurstCntrEn = '1' and BurstCntrReg /= "0000" then
-			BurstCntrNext <= std_logic_vector(unsigned(BurstCntrReg)-1);
-		elsif BurstCntrEn = '1' and BurstCntrReg = "0000" then
-			BurstCntrNext <= (others => '1');
-		end if;
-	end process BURST_CNTR; 
+	burst_cntr_inst : entity work.counter(rtl)
+	generic map(
+		MAX_VAL => BURST_LENGTH
+	)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		CntrEnable => CntrBurstEnable,
+		CntrReset => CntrBurstReset,
+		CntrVal => CntrBurstVal,
+		CntrEnd => CntrBurstEnd
+	);
 	
-	-- counters reaching threshold value
-	BurstCntrEnd <= '1' when BurstCntrReg = "0000" else '0';
-	NbBurstCntrEnd <= '1' when NbBurstCntrReg = "0000000000";
-	CtrlBurstCntrEnd <= BurstCntrEnd;
-	CtrlNbBurstCntrEnd <= NbBurstCntrEnd;
+	nbburst_cntr_inst : entity work.counter(rtl)
+	generic map(
+		MAX_VAL => NB_BURSTS
+	)
+	port map(
+		clk => clk,
+		rstB => rstB,
+		CntrEnable => CntrNbBurstEnable,
+		CntrReset => CntrNbBurstReset,
+		CntrVal => CntrNbBurstVal,
+		CntrEnd => CntrNbBurstEnd
+	);
+	
+	CntrBurstReset <= '0';
+	CtrlBurstCntrEnd <= CntrBurstEnd;
+	CtrlNbBurstCntrEnd <= CntrNbBurstEnd;
 	-- address update
-	ADDR: process(ReadAddressReg, ASReadAddr, CtrlInitState, BurstCntrEnd)
+	ADDR: process(ReadAddressReg, ASReadAddr, CtrlInitState, CntrBurstEnd)
 	begin
 		ReadAddressNext <= ReadAddressReg;
 		if CtrlInitState = '1' then
 			ReadAddressNext <= ASReadAddr;
-		elsif BurstCntrEnd = '1' then
+		elsif CntrBurstEnd = '1' then
 			ReadAddressNext <= std_logic_vector(unsigned(ReadAddressReg) + 8);
 		end if;
 	end process ADDR;
 	--ReadAddressNext <= std_logic_vector(unsigned(ReadAddressReg) + 8) when BurstCntrEnd = '1' else ReadAddressReg;
 	
-	NB_BURSTS_CNTR: process(BurstCntrEnd, NbBurstCntrReg, NbBurstCntrEnd)
-	begin
-		NbBurstCntrNext <= NbBurstCntrReg;
-		if BurstCntrEnd = '1' and NbBurstCntrEnd = '0' then
-			NbBurstCntrNext <= std_logic_vector(unsigned(NbBurstCntrReg)-1);
-		elsif BurstCntrEnd = '1' and NbBurstCntrEnd = '1' then
-			NbBurstCntrNext <= "1001101100";
-		end if;
-	end process NB_BURSTS_CNTR;
+	CntrNbBurstEnable <= '1' when CntrBurstEnd = '1' else '0';
+	CntrNbBurstReset <= '0';
 	
 	BURST_READ_WRITE : process(waitrequest, readdata, ReadAddressReg, FifoWriting, CtrlFetchNNparam, CtrlFetchRTData, ClassSeqClass, CtrlWriteResult, ASWriteAddr)
 	begin -- all Ctrl signals should be synchronous
@@ -123,14 +139,15 @@ begin
 		address <= (others => '0');
 		writedata <= (others => '0');
 		ReadingActive <= '0';
-		BurstCntrEn <= '0';
+		CntrBurstEnable <= '0';
+		FifoDataIn <= (others => '0');
 		if waitrequest = '0' and (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') and FifoWriting = '1' then --if access granted from avalon
 			readEn <= '1';
 			address <= ReadAddressReg;
 			if readdatavalid = '1' then
 				FifoDataIn <= readdata;
 				ReadingActive <= '1';
-				BurstCntrEn <= '1';
+				CntrBurstEnable <= '1';
 			end if;
 		elsif waitrequest = '0' and CtrlWriteResult = '1' and FifoWriting = '0' then
 			writeEn <= '1';

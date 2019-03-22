@@ -15,7 +15,6 @@ entity controller is
 		ASNNParamSet : in std_logic;
 		ASRTDataReady : in std_logic;
 		
-		
 		--interface with avalon master
 		AMFetchNNParam : out std_logic;
 		AMFetchRTData : out std_logic;
@@ -31,9 +30,7 @@ entity controller is
 		FifoRdempty: in std_logic;	
 		--interface with fifo backend (FB)
 		FBFifoReadParam : out std_logic;
-	
-		-- done in fifo backend
-		StatusCtrller : out std_logic_vector(2 downto 0)
+		CtrlStatusCtrller : out std_logic_vector(2 downto 0)
 		);
 end entity controller;
 
@@ -62,7 +59,7 @@ begin
 		end if;
 	end process REG;
 	
-	NSL: process(state_reg, ASNNParamSet, ASRTDataReady, paramCntrEnd, RTDataCntrEnd, AMNbBurstCntrEnd)
+	NSL: process(state_reg, ASNNParamSet, ASRTDataReady, paramCntrEnd, RTDataCntrEnd, AMNbBurstCntrEnd,FifoRdempty)
 	begin
 		-- default
 		state_next <= state_reg;
@@ -137,7 +134,5 @@ begin
 	end process RT_CNTR;
 	
 	-- distribute output signals
-	ASStatusCtrller <= StatusCtrller;
-	FBStatusCtrller <= StatusCtrller;
-	
+	CtrlStatusCtrller <= StatusCtrller;	
 end architecture rtl;

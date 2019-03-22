@@ -18,7 +18,7 @@ entity counter is
 end entity counter;
 
 architecture rtl of counter is
-	constant CntrMax : std_logic_vector(integer(ceil(log2(real(MAX_VAL))))-1 downto 0) := std_logic_vector(to_unsigned(MAX_VAL, integer(ceil(log2(real(MAX_VAL))))));
+	constant CntrMax : std_logic_vector(integer(ceil(log2(real(MAX_VAL))))-1 downto 0) := std_logic_vector(to_unsigned(MAX_VAL-1, integer(ceil(log2(real(MAX_VAL))))));
 	signal CntrReg, CntrNext : std_logic_vector(integer(ceil(log2(real(MAX_VAL))))-1 downto 0);
 	signal CntrEndInternal : std_logic;
 begin

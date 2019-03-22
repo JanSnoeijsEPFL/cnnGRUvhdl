@@ -92,7 +92,7 @@ begin
 		end if;
 	end process REG;
 	
-	FSM : process(stateReg, CntrBufferEnd, CntrConvEnd, CntrGruWEnd, CntrGruUEnd, FifoRdempty)
+	FSM : process(stateReg, CntrBufferEnd, CntrConvEnd, CntrGruWEnd, CntrGruUEnd, FifoRdempty,CtrlFifoReadParam,CntrConvVal,FifoDataOut)
 	begin
 		CntrConvEnable <= '0';
 		CntrBufferEnable <= '0';
@@ -220,9 +220,12 @@ begin
 		WGruOCRamWren_b <= '0';
 		UGruOCRamWren_a <= '0';
 		UGruOCRamWren_b <= '0';
-		--WGruOCRamAddress_b <= (others => '0');
 		WGruOCRamAddress_a <= (others => '0');
+		WGruOCRamAddress_b <= (others => '0');
 		UGruOCRamAddress_a <= (others => '0');
+		UGruOCRamAddress_b <= (others => '0');
+		WGruOCRamDataIn_b <= (others => '0');
+		UGruOCRamDataIn_b <= (Others => '0');
 		if stateReg = GruW then
 			WGruOCRamWren_a <= '1';
 			WGruOCRamAddress_a <= CntrGruWVal;
@@ -231,6 +234,7 @@ begin
 			UGruOCRamAddress_a <= CntrGruUVal;
 		end if;
 		WGruOCRamDataIn_a <= BufferReg; 
+		UGruOCRamDataIn_a <= BufferReg;
 	end process RAM_WRITE;
 	-- output signals
 	FifoRdreq <= RdreqFifo;

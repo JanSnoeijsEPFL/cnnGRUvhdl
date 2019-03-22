@@ -13,9 +13,11 @@ entity accelerator is
 		WGruOCRamNbWords : natural := 3234;
 		UGruOCRamWordSize : natural := 600;
 		UGruOCRamNbWords : natural := 307;
-
-		MAX_VAL_buffer : natural := integer(ceil(real(600/32))); --19
-		MAX_VAL_conv : natural := integer(ceil(real(10*6/32)))--2
+		
+		BURST_LENGTH : natural := 8;
+		NB_BURSTS : natural := 625;
+		MAX_VAL_buffer : natural := 19; --19
+		MAX_VAL_conv : natural := 2--2
 	);
 	port(
 		clk : in std_logic;
@@ -37,12 +39,20 @@ entity accelerator is
 		ASwriteEn : in std_logic;
 		ASslaveAddr : in std_logic_vector(2 downto 0);
 		ASreaddata : out std_logic_vector(31 downto 0);
-		ASwritedata : in std_logic_vector(31 downto 0)
+		ASwritedata : in std_logic_vector(31 downto 0);
+
+		DEBUG_OCRAMWdataIsNull_a : out std_logic;
+		DEBUG_OCRAMUdataIsNull_a : out std_logic;
+		DEBUG_OCRAMWdataIsNull_b : out std_logic;
+		DEBUG_OCRAMUdataIsNull_b : out std_logic
+		
+		
 	);
 end entity accelerator;
 
 architecture rtl of accelerator is
 	
+	constant OCramdataZero: std_logic_vector := std_logic_vector(to_unsigned(0, WGruOCRamWordSize)); 
 	-- AV master - AV slave
 	signal ASReadAddr : std_logic_vector(31 downto 0); -- read address in SDRAM for data fetching
 	signal ASWriteAddr : std_logic_vector(31 downto 0); -- write address in SDRAM for writing results of algorithm
@@ -104,11 +114,7 @@ architecture rtl of accelerator is
 	signal ConvRegOut : std_logic_vector(NBCONVREG*NBITS-1 downto 0);
 	signal ConvWriteEn : std_logic_vector(NBCONVREG-1 downto 0);
 	
-	-- param reg file (debug regfile data)
-	--signal ParamRegFileDataOut : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	
-	--signal XRegFileDataIn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
-	--signal XRegFileWriteEn : std_logic_vector((NBITS-1)*NBITS-1 downto 0);
+
 	-- signal from classifier
 	signal ClassSeqClass: std_logic; -- sequence classification result
 	
@@ -130,15 +136,15 @@ architecture rtl of accelerator is
 	component gruWRAM
 		port
 		(
-			address_a		: in std_logic_vector (8 downto 0);
-			address_b		: in std_logic_vector (8 downto 0);
+			address_a		: in std_logic_vector (11 downto 0);
+			address_b		: in std_logic_vector (11 downto 0);
 			clock		: in std_logic  := '1';
-			data_a		: in std_logic_vector (99 downto 0);
-			data_b		: in std_logic_vector (99 downto 0);
+			data_a		: in std_logic_vector (599 downto 0);
+			data_b		: in std_logic_vector (599 downto 0);
 			wren_a		: in std_logic  := '0';
 			wren_b		: in std_logic  := '0';
-			q_a		: out std_logic_vector (99 downto 0);
-			q_b		: out std_logic_vector (99 downto 0)
+			q_a		: out std_logic_vector (599 downto 0);
+			q_b		: out std_logic_vector (599 downto 0)
 		);
 	end component;
 	
@@ -148,12 +154,12 @@ architecture rtl of accelerator is
 			address_a		: in std_logic_vector (8 downto 0);
 			address_b		: in std_logic_vector (8 downto 0);
 			clock		: in std_logic  := '1';
-			data_a		: in std_logic_vector (99 downto 0);
-			data_b		: in std_logic_vector (99 downto 0);
+			data_a		: in std_logic_vector (599 downto 0);
+			data_b		: in std_logic_vector (599 downto 0);
 			wren_a		: in std_logic  := '0';
 			wren_b		: in std_logic  := '0';
-			q_a		: out std_logic_vector (99 downto 0);
-			q_b		: out std_logic_vector (99 downto 0)
+			q_a		: out std_logic_vector (599 downto 0);
+			q_b		: out std_logic_vector (599 downto 0)
 		);
 	end component;
 
@@ -196,7 +202,9 @@ begin
 	av_master_inst : entity work.av_master(rtl) 
 	generic map(
 		NBITS => NBITS,
-		FRACBITS => FRACBITS
+		FRACBITS => FRACBITS,
+		BURST_LENGTH => BURST_LENGTH,
+		NB_BURSTS => NB_BURSTS
 		)
 	port map(
 		--avalon interface
@@ -242,7 +250,7 @@ begin
 		writedata => ASwritedata,
 	
 		AMWriteAddr => ASWriteAddr,
-		AMReadAddr => ASWriteAddr,
+		AMReadAddr => ASReadAddr,
 		AMReadingActive => ASReadingActive,	
 		
 		CtrlNNParamset => CtrlNNParamset,
@@ -280,7 +288,7 @@ begin
 		UGruOCRamAddress_b => UGruOCRamAddress_b,
 		UGruOCRamDataIn_a => UGruOCRamDataIn_a,
 		UGruOCRamDataIn_b => UGruOCRamDataIn_b,
-	   UGruOCRamWren_a => UGruOCRamWren_a,
+	   	UGruOCRamWren_a => UGruOCRamWren_a,
 		UGruOCRamWren_b => UGruOCRamWren_b,
 		
 		ConvRegIn => ConvRegIn,
@@ -301,7 +309,6 @@ begin
 		
 		ASNNParamSet => CtrlNNParamSet,
 		ASRTDataReady => CtrlRTDataReady,
-		ASStatusCtrller => CtrlStatusCtrller,
 		
 		AMFetchNNParam => CtrlFetchNNParam,
 		AMFetchRTData => CtrlFetchRTData,
@@ -315,7 +322,7 @@ begin
 		
 		FifoRdempty => FifoRdempty,
 		FBFifoReadParam => CtrlFifoReadParam,
-		FBStatusCtrller => CtrlStatusCtrller
+		CtrlStatusCtrller => CtrlStatusCtrller
 	);
 	
 	conv_reg_file_inst : entity work.reg_file(rtl)
@@ -331,6 +338,9 @@ begin
 		writeEn => ConvWriteEn
 	);
 	
-
+	DEBUG_OCRAMWdataIsNull_a <= '1' when WGruOCRamDataOut_a =  OCramdataZero else '0';
+	DEBUG_OCRAMUdataIsNull_a <= '1' when UGruOCRamDataOut_a = OCramdataZero else '0';
+	DEBUG_OCRAMWdataIsNull_b <= '1' when WGruOCRamDataOut_b = OCramdataZero else '0';
+	DEBUG_OCRAMUdataIsNull_b <= '1' when UGruOCRamDataOut_b = OCramdataZero else '0';
 	--IntRegNb <= to_integer(unsigned(ParamRegFileRegNumber));
 end architecture rtl;
