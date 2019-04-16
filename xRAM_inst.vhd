@@ -1,4 +1,4 @@
-gruURAM_inst : gruURAM PORT MAP (
+xRAM_inst : xRAM PORT MAP (
 		address_a	 => address_a_sig,
 		address_b	 => address_b_sig,
 		byteena_b	 => byteena_b_sig,

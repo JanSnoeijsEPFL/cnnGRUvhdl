@@ -141,25 +141,27 @@ begin
 		ReadingActive <= '0';
 		CntrBurstEnable <= '0';
 		FifoDataIn <= (others => '0');
-		if waitrequest = '0' and (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') and FifoWriting = '1' then --if access granted from avalon
+		if (CtrlFetchNNparam = '1' or CtrlFetchRTData = '1') then --if access granted from avalon
 			readEn <= '1';
 			address <= ReadAddressReg;
-			if readdatavalid = '1' then
+			if readdatavalid = '1' and waitrequest = '1' then
 				FifoDataIn <= readdata;
 				ReadingActive <= '1';
 				CntrBurstEnable <= '1';
 			end if;
-		elsif waitrequest = '0' and CtrlWriteResult = '1' and FifoWriting = '0' then
+		elsif CtrlWriteResult = '1' and FifoWriting = '0' then
 			writeEn <= '1';
-			address <= ASWriteAddr;
-			writedata(0) <= ClassSeqClass;
+			if waitrequest = '0' then
+				address <= ASWriteAddr;
+				writedata(0) <= ClassSeqClass;
+			end if;
 		end if;
 	end process BURST_READ_WRITE;
 	
 	FIFO_CTRL : process(FifoWrfull, CtrlFifoWriteAllow)
 	begin
 		FifoWrreq <= '0';
-		FifoWriting <= '1';
+		FifoWriting <= '0';
 		if FifoWrfull = '0' and CtrlFifoWriteAllow = '1' then
 			FifoWrreq <= '1';
 			FifoWriting <= '1';

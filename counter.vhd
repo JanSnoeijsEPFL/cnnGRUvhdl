@@ -37,7 +37,7 @@ begin
 		CntrNext <= CntrReg;
 		if CntrEnable = '1' and CntrEndInternal = '0' then
 			CntrNext <= std_logic_vector(unsigned(CntrReg) + 1);
-		elsif CntrReset = '1' or CntrEndInternal = '1' then
+		elsif CntrReset = '1' or (CntrEndInternal = '1' and CntrEnable = '1') then
 			CntrNext <= (others => '0');
 		end if;
 	end process CNTR;

@@ -33,10 +33,11 @@ begin
 	
 	WRITING: process(RegReg, dataIn, writeEn)
 	begin
-		RegNext <= RegReg;
 		for i in 0 to NBREG-1 loop
 			if writeEn(i) = '1' then
 				RegNext(i) <= dataIn(i*NBITS+NBITS-1 downto i*NBITS);
+			else
+				RegNext(i) <= RegReg(i);
 			end if;
 		end loop;
 	end process WRITING;

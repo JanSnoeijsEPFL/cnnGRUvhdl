@@ -4,7 +4,7 @@
 -- MODULE: altsyncram 
 
 -- ============================================================
--- File Name: gruWRAM.vhd
+-- File Name: xRAM.vhd
 -- Megafunction Name(s):
 -- 			altsyncram
 --
@@ -39,11 +39,11 @@ USE ieee.std_logic_1164.all;
 LIBRARY altera_mf;
 USE altera_mf.altera_mf_components.all;
 
-ENTITY gruWRAM IS
+ENTITY xRAM IS
 	PORT
 	(
-		address_a		: IN STD_LOGIC_VECTOR (11 DOWNTO 0);
-		address_b		: IN STD_LOGIC_VECTOR (11 DOWNTO 0);
+		address_a		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+		address_b		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
 		byteena_b		: IN STD_LOGIC_VECTOR (59 DOWNTO 0) :=  (OTHERS => '1');
 		clock		: IN STD_LOGIC  := '1';
 		data_a		: IN STD_LOGIC_VECTOR (599 DOWNTO 0);
@@ -53,10 +53,10 @@ ENTITY gruWRAM IS
 		q_a		: OUT STD_LOGIC_VECTOR (599 DOWNTO 0);
 		q_b		: OUT STD_LOGIC_VECTOR (599 DOWNTO 0)
 	);
-END gruWRAM;
+END xRAM;
 
 
-ARCHITECTURE SYN OF gruwram IS
+ARCHITECTURE SYN OF xram IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (599 DOWNTO 0);
 	SIGNAL sub_wire1	: STD_LOGIC_VECTOR (599 DOWNTO 0);
@@ -77,8 +77,8 @@ BEGIN
 		indata_reg_b => "CLOCK0",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
-		numwords_a => 3234,
-		numwords_b => 3234,
+		numwords_a => 46,
+		numwords_b => 46,
 		operation_mode => "BIDIR_DUAL_PORT",
 		outdata_aclr_a => "NONE",
 		outdata_aclr_b => "NONE",
@@ -89,8 +89,8 @@ BEGIN
 		read_during_write_mode_mixed_ports => "DONT_CARE",
 		read_during_write_mode_port_a => "NEW_DATA_NO_NBE_READ",
 		read_during_write_mode_port_b => "NEW_DATA_NO_NBE_READ",
-		widthad_a => 12,
-		widthad_b => 12,
+		widthad_a => 6,
+		widthad_b => 6,
 		width_a => 600,
 		width_b => 600,
 		width_byteena_a => 1,
@@ -147,7 +147,7 @@ END SYN;
 -- Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 -- Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
--- Retrieval info: PRIVATE: MEMSIZE NUMERIC "1940400"
+-- Retrieval info: PRIVATE: MEMSIZE NUMERIC "27600"
 -- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 -- Retrieval info: PRIVATE: MIFfilename STRING ""
 -- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "3"
@@ -187,8 +187,8 @@ END SYN;
 -- Retrieval info: CONSTANT: INDATA_REG_B STRING "CLOCK0"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
--- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "3234"
--- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "3234"
+-- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "46"
+-- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "46"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "BIDIR_DUAL_PORT"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_A STRING "NONE"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "NONE"
@@ -199,15 +199,15 @@ END SYN;
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_MIXED_PORTS STRING "DONT_CARE"
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_PORT_A STRING "NEW_DATA_NO_NBE_READ"
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_PORT_B STRING "NEW_DATA_NO_NBE_READ"
--- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "12"
--- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "12"
+-- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "6"
+-- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "600"
 -- Retrieval info: CONSTANT: WIDTH_B NUMERIC "600"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_B NUMERIC "60"
 -- Retrieval info: CONSTANT: WRCONTROL_WRADDRESS_REG_B STRING "CLOCK0"
--- Retrieval info: USED_PORT: address_a 0 0 12 0 INPUT NODEFVAL "address_a[11..0]"
--- Retrieval info: USED_PORT: address_b 0 0 12 0 INPUT NODEFVAL "address_b[11..0]"
+-- Retrieval info: USED_PORT: address_a 0 0 6 0 INPUT NODEFVAL "address_a[5..0]"
+-- Retrieval info: USED_PORT: address_b 0 0 6 0 INPUT NODEFVAL "address_b[5..0]"
 -- Retrieval info: USED_PORT: byteena_b 0 0 60 0 INPUT VCC "byteena_b[59..0]"
 -- Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC "clock"
 -- Retrieval info: USED_PORT: data_a 0 0 600 0 INPUT NODEFVAL "data_a[599..0]"
@@ -216,8 +216,8 @@ END SYN;
 -- Retrieval info: USED_PORT: q_b 0 0 600 0 OUTPUT NODEFVAL "q_b[599..0]"
 -- Retrieval info: USED_PORT: wren_a 0 0 0 0 INPUT GND "wren_a"
 -- Retrieval info: USED_PORT: wren_b 0 0 0 0 INPUT GND "wren_b"
--- Retrieval info: CONNECT: @address_a 0 0 12 0 address_a 0 0 12 0
--- Retrieval info: CONNECT: @address_b 0 0 12 0 address_b 0 0 12 0
+-- Retrieval info: CONNECT: @address_a 0 0 6 0 address_a 0 0 6 0
+-- Retrieval info: CONNECT: @address_b 0 0 6 0 address_b 0 0 6 0
 -- Retrieval info: CONNECT: @byteena_b 0 0 60 0 byteena_b 0 0 60 0
 -- Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 600 0 data_a 0 0 600 0
@@ -226,9 +226,9 @@ END SYN;
 -- Retrieval info: CONNECT: @wren_b 0 0 0 0 wren_b 0 0 0 0
 -- Retrieval info: CONNECT: q_a 0 0 600 0 @q_a 0 0 600 0
 -- Retrieval info: CONNECT: q_b 0 0 600 0 @q_b 0 0 600 0
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruWRAM.vhd TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruWRAM.inc FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruWRAM.cmp TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruWRAM.bsf TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruWRAM_inst.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL xRAM.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL xRAM.inc FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL xRAM.cmp TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL xRAM.bsf TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL xRAM_inst.vhd TRUE
 -- Retrieval info: LIB_FILE: altera_mf

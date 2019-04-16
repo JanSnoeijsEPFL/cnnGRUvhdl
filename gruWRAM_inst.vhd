@@ -1,6 +1,7 @@
 gruWRAM_inst : gruWRAM PORT MAP (
 		address_a	 => address_a_sig,
 		address_b	 => address_b_sig,
+		byteena_b	 => byteena_b_sig,
 		clock	 => clock_sig,
 		data_a	 => data_a_sig,
 		data_b	 => data_b_sig,

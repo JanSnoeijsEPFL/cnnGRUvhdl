@@ -10,7 +10,7 @@ end entity paramfetch_tb;
 
 architecture bench of paramfetch_tb is
 
-	constant CLK_PER : time := 10 ns;
+	constant CLK_PER : time := 4 ns;
 	constant NBITS : natural := 6;
 	constant FRACBITS : natural := 4;
 	constant	NBCONVREG : natural := 10;
@@ -21,10 +21,10 @@ architecture bench of paramfetch_tb is
 	constant	UGruOCRamNbWords : natural := 307;
 	constant BURST_LENGTH : natural := 8;
 	constant NB_BURSTS : natural := 625;
-	constant	MAX_VAL_buffer : natural := 19; --19
+	constant	MAX_VAL_buffer : natural := 20;
 	constant	MAX_VAL_conv : natural := 2;
 	
-	type paramSDRAM is array(1999 downto 0) of std_logic_vector(31 downto 0);
+	type paramSDRAM is array(5000 downto 0) of std_logic_vector(31 downto 0);
 	signal SDRAMblock : paramSDRAM;
 	
 	signal clk_tb : std_logic :=  '0';
@@ -54,13 +54,13 @@ architecture bench of paramfetch_tb is
 	
 		
 
-	constant TIME_DELTA : time := CLK_PER*3000;
+	constant TIME_DELTA : time := CLK_PER*10000;
 	signal stop : boolean := false;
 	
 	
 	procedure WRITE_IN_EXT_SDRAM
-		(variable X : in integer;
-		 variable Y: out std_logic_vector(31 downto 0)) is
+		(variable intData : in integer;
+		 variable stdlvData: out std_logic_vector(31 downto 0)) is
 	begin
 		Y := std_logic_vector(to_unsigned(X, 32));
 	end procedure WRITE_IN_EXT_SDRAM;
@@ -125,7 +125,7 @@ begin
 		wait for 1*CLK_PER;
 		AMwaitrequest_tb <= '0';
 		AMreaddatavalid_tb <= '1';
-		for i in 0 to 1999 loop
+		for i in 0 to 5000 loop
 			uniform(seed1, seed2, rand);
 			rand_num := integer(rand*range_of_rand);
 			WRITE_IN_EXT_SDRAM(rand_num, RAMvector);
@@ -140,16 +140,16 @@ begin
 		ASwritedata_tb(0) <= '1';
 		
 		wait for 1*CLK_PER;
-		
+		wait for CLK_PER*1/2;
 		-- set read address in SDRAM fro burst transfers
 		ASslaveAddr_tb <= "010";
 		ASwritedata_tb <= (others => '0');
 		
-		wait for CLK_PER;
-		wait for CLK_PER*1/2;
+		--wait for CLK_PER;
+
 		ASwriteEn_tb <= '0';
 		
-		for i in 0 to 1999 loop
+		for i in 0 to 5000 loop
 			AMreaddata_tb <= SDRAMblock(i);
 			wait for CLK_PER;
 		end loop;

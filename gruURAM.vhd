@@ -44,6 +44,7 @@ ENTITY gruURAM IS
 	(
 		address_a		: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
 		address_b		: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
+		byteena_b		: IN STD_LOGIC_VECTOR (59 DOWNTO 0) :=  (OTHERS => '1');
 		clock		: IN STD_LOGIC  := '1';
 		data_a		: IN STD_LOGIC_VECTOR (599 DOWNTO 0);
 		data_b		: IN STD_LOGIC_VECTOR (599 DOWNTO 0);
@@ -67,6 +68,8 @@ BEGIN
 	altsyncram_component : altsyncram
 	GENERIC MAP (
 		address_reg_b => "CLOCK0",
+		byteena_reg_b => "CLOCK0",
+		byte_size => 10,
 		clock_enable_input_a => "BYPASS",
 		clock_enable_input_b => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -74,14 +77,15 @@ BEGIN
 		indata_reg_b => "CLOCK0",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
-		numwords_a => 302,
-		numwords_b => 302,
+		numwords_a => 307,
+		numwords_b => 307,
 		operation_mode => "BIDIR_DUAL_PORT",
 		outdata_aclr_a => "NONE",
 		outdata_aclr_b => "NONE",
 		outdata_reg_a => "CLOCK0",
 		outdata_reg_b => "CLOCK0",
 		power_up_uninitialized => "TRUE",
+		ram_block_type => "M10K",
 		read_during_write_mode_mixed_ports => "DONT_CARE",
 		read_during_write_mode_port_a => "NEW_DATA_NO_NBE_READ",
 		read_during_write_mode_port_b => "NEW_DATA_NO_NBE_READ",
@@ -90,12 +94,13 @@ BEGIN
 		width_a => 600,
 		width_b => 600,
 		width_byteena_a => 1,
-		width_byteena_b => 1,
+		width_byteena_b => 60,
 		wrcontrol_wraddress_reg_b => "CLOCK0"
 	)
 	PORT MAP (
 		address_a => address_a,
 		address_b => address_b,
+		byteena_b => byteena_b,
 		clock0 => clock,
 		data_a => data_a,
 		data_b => data_b,
@@ -117,8 +122,8 @@ END SYN;
 -- Retrieval info: PRIVATE: BYTEENA_ACLR_A NUMERIC "0"
 -- Retrieval info: PRIVATE: BYTEENA_ACLR_B NUMERIC "0"
 -- Retrieval info: PRIVATE: BYTE_ENABLE_A NUMERIC "0"
--- Retrieval info: PRIVATE: BYTE_ENABLE_B NUMERIC "0"
--- Retrieval info: PRIVATE: BYTE_SIZE NUMERIC "8"
+-- Retrieval info: PRIVATE: BYTE_ENABLE_B NUMERIC "1"
+-- Retrieval info: PRIVATE: BYTE_SIZE NUMERIC "10"
 -- Retrieval info: PRIVATE: BlankMemory NUMERIC "1"
 -- Retrieval info: PRIVATE: CLOCK_ENABLE_INPUT_A NUMERIC "0"
 -- Retrieval info: PRIVATE: CLOCK_ENABLE_INPUT_B NUMERIC "0"
@@ -142,13 +147,13 @@ END SYN;
 -- Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 -- Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
--- Retrieval info: PRIVATE: MEMSIZE NUMERIC "181200"
+-- Retrieval info: PRIVATE: MEMSIZE NUMERIC "184200"
 -- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 -- Retrieval info: PRIVATE: MIFfilename STRING ""
 -- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "3"
 -- Retrieval info: PRIVATE: OUTDATA_ACLR_B NUMERIC "0"
 -- Retrieval info: PRIVATE: OUTDATA_REG_B NUMERIC "1"
--- Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
+-- Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "2"
 -- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_MIXED_PORTS NUMERIC "2"
 -- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_PORT_A NUMERIC "3"
 -- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_PORT_B NUMERIC "3"
@@ -173,6 +178,8 @@ END SYN;
 -- Retrieval info: PRIVATE: rden NUMERIC "0"
 -- Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 -- Retrieval info: CONSTANT: ADDRESS_REG_B STRING "CLOCK0"
+-- Retrieval info: CONSTANT: BYTEENA_REG_B STRING "CLOCK0"
+-- Retrieval info: CONSTANT: BYTE_SIZE NUMERIC "10"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_A STRING "BYPASS"
@@ -180,14 +187,15 @@ END SYN;
 -- Retrieval info: CONSTANT: INDATA_REG_B STRING "CLOCK0"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
--- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "302"
--- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "302"
+-- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "307"
+-- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "307"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "BIDIR_DUAL_PORT"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_A STRING "NONE"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "NONE"
 -- Retrieval info: CONSTANT: OUTDATA_REG_A STRING "CLOCK0"
 -- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "CLOCK0"
 -- Retrieval info: CONSTANT: POWER_UP_UNINITIALIZED STRING "TRUE"
+-- Retrieval info: CONSTANT: RAM_BLOCK_TYPE STRING "M10K"
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_MIXED_PORTS STRING "DONT_CARE"
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_PORT_A STRING "NEW_DATA_NO_NBE_READ"
 -- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_PORT_B STRING "NEW_DATA_NO_NBE_READ"
@@ -196,10 +204,11 @@ END SYN;
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "600"
 -- Retrieval info: CONSTANT: WIDTH_B NUMERIC "600"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
--- Retrieval info: CONSTANT: WIDTH_BYTEENA_B NUMERIC "1"
+-- Retrieval info: CONSTANT: WIDTH_BYTEENA_B NUMERIC "60"
 -- Retrieval info: CONSTANT: WRCONTROL_WRADDRESS_REG_B STRING "CLOCK0"
 -- Retrieval info: USED_PORT: address_a 0 0 9 0 INPUT NODEFVAL "address_a[8..0]"
 -- Retrieval info: USED_PORT: address_b 0 0 9 0 INPUT NODEFVAL "address_b[8..0]"
+-- Retrieval info: USED_PORT: byteena_b 0 0 60 0 INPUT VCC "byteena_b[59..0]"
 -- Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC "clock"
 -- Retrieval info: USED_PORT: data_a 0 0 600 0 INPUT NODEFVAL "data_a[599..0]"
 -- Retrieval info: USED_PORT: data_b 0 0 600 0 INPUT NODEFVAL "data_b[599..0]"
@@ -209,6 +218,7 @@ END SYN;
 -- Retrieval info: USED_PORT: wren_b 0 0 0 0 INPUT GND "wren_b"
 -- Retrieval info: CONNECT: @address_a 0 0 9 0 address_a 0 0 9 0
 -- Retrieval info: CONNECT: @address_b 0 0 9 0 address_b 0 0 9 0
+-- Retrieval info: CONNECT: @byteena_b 0 0 60 0 byteena_b 0 0 60 0
 -- Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 600 0 data_a 0 0 600 0
 -- Retrieval info: CONNECT: @data_b 0 0 600 0 data_b 0 0 600 0
@@ -219,6 +229,6 @@ END SYN;
 -- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM.vhd TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM.inc FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM.cmp TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM.bsf FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM.bsf TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL gruURAM_inst.vhd TRUE
 -- Retrieval info: LIB_FILE: altera_mf

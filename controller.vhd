@@ -59,7 +59,7 @@ begin
 		end if;
 	end process REG;
 	
-	NSL: process(state_reg, ASNNParamSet, ASRTDataReady, paramCntrEnd, RTDataCntrEnd, AMNbBurstCntrEnd,FifoRdempty)
+	NSL: process(state_reg, ASNNParamSet, ASRTDataReady, paramCntrEnd, RTDataCntrEnd, AMNbBurstCntrEnd,FifoRdempty, AMBurstCntrEnd)
 	begin
 		-- default
 		state_next <= state_reg;
@@ -81,7 +81,7 @@ begin
 									AMFifoWriteAllow <= '1';
 									StatusCtrller <= "001";
 									FBFifoReadParam <= '1';
-									if AMNbBurstCntrEnd = '1' then
+									if AMNbBurstCntrEnd = '1' and AMBurstCntrEnd = '1' then
 										state_next <= incParamCounter;
 									end if;
 			when incParamCounter =>
@@ -121,6 +121,19 @@ begin
 		end if;
 	end process PARAM_CNTR;
 	
+	--cntrParam_inst : entity work.counter(rtl)
+		--generic map(
+		--	MAX_VAL => MAX_VAL_buffer
+		--)
+		--port map(
+		--	clk => clk,
+		--	rstB => rstB,
+		--	CntrEnable => CntrBufferEnable,
+		--	CntrReset => CntrBufferReset,
+		--	CntrVal => CntrBufferVal,
+			--CntrEnd => CntrBufferEnd
+		--);
+		
 	paramCntrEnd <= '1' when paramCntrReg = "0000" else '0';
 	
 	RT_CNTR: process(RTDataCntrEnd, RTDataCntrReg, AMBurstCntrEnd, RTDataCntrEnable)

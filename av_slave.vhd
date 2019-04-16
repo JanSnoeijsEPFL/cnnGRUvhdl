@@ -21,8 +21,14 @@ entity av_slave is
 		-- to controller
 		CtrlNNParamset : out std_logic; -- set by proc to indicate parameters are ready in SDRAM
 		CtrlRTDataReady: out std_logic; -- set by proc to indicate new RT data is ready in SDRAM
-		CtrlStatusCtrller : in std_logic_vector(2 downto 0) -- status of controller for processor checks
-	);
+		CtrlStatusCtrller : in std_logic_vector(2 downto 0); -- status of controller for processor checks
+		
+		--to convreg
+		ConvIn : out std_logic_vector(10*6-1 downto 0);
+		ConvOut : in std_logic_vector(10*6-1 downto 0);
+		ConvWriteEn : out std_logic_vector(10-1 downto 0)
+		);
+		
 end entity av_slave;
 
 architecture rtl of av_slave is
@@ -53,7 +59,7 @@ begin
 		end if;
 	end process REG;
 	
-	READING: process(readEn, NNParamsetReg, RTDataReadyReg,ReadingActiveReg, StatusCtrllerReg, ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to read a register
+	READING: process(readEn, NNParamsetReg, RTDataReadyReg,ReadingActiveReg, StatusCtrllerReg, ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut) --processor wants to read a register
 	begin
 		-- default
 		readdata <= (others => '0');
@@ -69,6 +75,10 @@ begin
 					readdata <= ReadAddressReg;
 				when "011" => 
 					readdata <= WriteAddressReg;
+				when "100" =>
+					readdata(29 downto 0) <= ConvOut(5*6-1 downto 0);
+				when "101" =>
+					readdata(29 downto 0) <= ConvOut(10*6-1 downto 5*6);
 				when others => 
 					readdata <= (others => '0');
 			end case;
@@ -82,7 +92,8 @@ begin
 		RTDataReadyNext <= RTDataReadyReg;
 		ReadAddressNext <= ReadAddressReg;
 		WriteAddressNext <= WriteAddressReg;
-		
+		ConvWriteEn <= (others => '0');
+		ConvIn <= (others => '0');
 		if writeEn = '1' then
 			case slaveAddr is
 				when "000" => 
@@ -92,6 +103,14 @@ begin
 					ReadAddressNext <= writedata;
 				when "011" => 
 					WriteAddressNext <= writedata;
+				when "100" =>
+					ConvWriteEn(4 downto 0) <= (others => '1');
+					ConvWriteEn(9 downto 5) <= (others => '0');
+					ConvIn(5*6-1 downto 0) <= writedata(29 downto 0);
+				when "101" =>
+					ConvWriteEn(4 downto 0) <= (others => '0');
+					ConvWriteEn(9 downto 5) <= (others => '1');
+					ConvIn(10*6-1 downto 5*6) <= writedata(29 downto 0);
 				when others =>
 					null;
 			end case;
