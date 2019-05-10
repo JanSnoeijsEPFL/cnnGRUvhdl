@@ -28,6 +28,7 @@ end entity conv2d_control;
 architecture rtl of conv2d_control is
 	type FSM is (sleep,line_even, line_odd, bias);
 	signal state_reg, state_next : FSM;
+	signal f0_end_reg, f0_end_next : std_logic;
 	signal wait_CntrEnable : std_logic;
 	signal wait_CntrReset : std_logic;
 	signal wait_CntrVal : std_logic_vector(0 downto 0); 
@@ -57,14 +58,17 @@ begin
 	begin
 		if rstB = '0' then
 			state_reg <= sleep;
+			f0_end_reg <= '0';
 		elsif rising_edge(clk) then
 			state_reg <= state_next;
+			f0_end_reg <= f0_end_next;
 		end if;
 	end process;
 	
-	NSL : process(start_conv2d, filter_CntrVal, line_CntrVal, line_CntrEnd, wait_CntrEnd, filter_CntrEnd, state_reg)
+	NSL : process(start_conv2d, filter_CntrVal, line_CntrVal, line_CntrEnd, wait_CntrEnd, filter_CntrEnd, state_reg, f0_end_reg)
 	begin
 		--default 
+		f0_end_next <= f0_end_reg;
 		state_next <= state_reg;
 		line_CntrEnable <= '0';
 		wait_CntrEnable <= '0';
@@ -82,6 +86,7 @@ begin
 					filter_CntrReset <= '1';
 					state_next <= line_even;
 					line_CntrEnable <= '1';
+					f0_end_next <= '0';
 				end if;
 			when line_even =>
 				wait_CntrEnable <= '1';
@@ -89,20 +94,20 @@ begin
 					state_next <= line_odd;
 					if line_CntrVal = "00010" and filter_CntrEnd = '0' then
 						start_sampling <= '1';
+					elsif line_CntrEnd = '1' and filter_CntrEnd = '0' then
+						f0_end_next <= '1';
+						line_CntrReset <= '1';
 					end if;
 				end if;
 			when line_odd =>
 				wait_CntrEnable <= '1';
 				if wait_CntrEnd = '1' then
 					state_next <= bias;
-				--else
-					--if line_CntrVal /= "00001" or filter_CntrEnd = '1' then
-						--macs_clear <= (others => '1'); -- clear here bcs of MAC latency (input reg, mul_reg, acc_reg : 3 cycles)
-					--end if;
 				end if;
 			when bias =>
 				line_CntrEnable <= '1';
-				if line_CntrEnd = '1' then
+				if line_CntrEnd = '1' or f0_end_reg = '1' then
+					f0_end_next <= '0';
 					filter_CntrEnable <= '1';
 					wait_CntrReset <= '1';
 					line_CntrReset <= '1';
