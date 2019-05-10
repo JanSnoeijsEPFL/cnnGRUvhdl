@@ -4,8 +4,7 @@ use ieee.numeric_std.all;
 
 entity algo_control is
 	generic(
-		RECUR_CNTR_MAX : natural := 10;
-		DEBUG : natural := 0 -- DEBUG mode when '1'
+		RECUR_CNTR_MAX : natural := 10
 	);
 	port(
 		clk : in std_logic;
@@ -15,15 +14,12 @@ entity algo_control is
 		gru_end : in std_logic;
 		dense_end : in std_logic;
 		algo_state : out std_logic_vector(2 downto 0);
-		start_conv2d : out std_logic;
-		trig_serializer : out std_logic;
-		recur_iter : out std_logic_vector(3 downto 0);
-		trigger_gru : out std_logic
+		start_conv2d : out std_logic
 	);
 end entity algo_control;
 
 architecture rtl of algo_control is
-	type FSM is (sleep,recur, conv2d,maxp, gru, dense);
+	type FSM is (sleep,recur, conv2d, gru, dense);
 	signal state_reg, state_next : FSM;
 	signal recur_CntrEnable : std_logic;
 	signal recur_CntrReset : std_logic;
@@ -38,44 +34,36 @@ begin
 			state_reg <= state_next;
 		end if;
 	end process;
+	
 	NSL : process(state_reg, start_algo, recur_CntrEnd, conv2d_end, gru_end, dense_end)
 	begin
 		-- default
 		recur_CntrReset <= '0';
 		recur_CntrEnable <= '0';
 		start_conv2d <= '0';
-		trig_serializer <= '0';
-		trigger_gru <= '0';
 		state_next <= state_reg;
 		case state_reg is
 			when sleep =>
 				recur_CntrReset <= '1';
 				if start_algo = '1' then
-					state_next <= conv2d;
-					start_conv2d <= '1';
-				end if;
-			when conv2d =>
-				if conv2d_end = '1' then
-					state_next <= maxp;
-				end if;
-			when maxp => 
-				trig_serializer <= '1';
-				state_next <= gru;
-				trigger_gru <= '1';
-			when gru => 
-				if gru_end = '1' then
 					state_next <= recur;
 				end if;
 			when recur =>
 				recur_CntrEnable <= '1';
 				if recur_CntrEnd = '1' then
 					state_next <= dense;
-				elsif DEBUG = 1 then
-					state_next <= sleep;
 				else
 					state_next <= conv2d;
 					start_conv2d <= '1';
-			end if;
+				end if;
+			when conv2d =>
+				if conv2d_end = '1' then
+					state_next <= gru;
+				end if;
+			when gru => 
+				if gru_end = '1' then
+					state_next <= recur;
+				end if;
 			when dense =>
 				if dense_end = '1' then
 					state_next <= sleep;
@@ -85,7 +73,6 @@ begin
 		end case;
 	end process;
 	
-	recur_iter <= recur_CntrVal;
 	recur_cntr_inst : entity work.counter(rtl)
 	generic map(
 		MAX_VAL => RECUR_CNTR_MAX

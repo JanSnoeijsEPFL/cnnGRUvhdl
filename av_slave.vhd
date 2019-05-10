@@ -16,61 +16,57 @@ entity av_slave is
 		-- to avalon master
 		AMWriteAddr : out std_logic_vector(31 downto 0);
 		AMReadAddr : out std_logic_vector(31 downto 0);
-		AMReadingActive: in std_logic; -- set to indicate Master is reading data from SDRAM	
-		
+	
 		-- to controller
-		CtrlNNParamset : out std_logic; -- set by proc to indicate parameters are ready in SDRAM
-		CtrlRTDataReady: out std_logic; -- set by proc to indicate new RT data is ready in SDRAM
-		CtrlStatusCtrller : in std_logic_vector(2 downto 0); -- status of controller for processor checks
+		start_algo : out std_logic; -- set by proc to indicate parameters are ready in SDRAM
+		algo_state : in std_logic_vector(2 downto 0);
 		
 		--to convreg
 		ConvIn : out std_logic_vector(10*6-1 downto 0);
 		ConvOut : in std_logic_vector(10*6-1 downto 0);
-		ConvWriteEn : out std_logic_vector(10-1 downto 0)
+		ConvWriteEn : out std_logic_vector(10-1 downto 0);
+		xOCRAM_b_mode : out std_logic
+		
 		);
 		
 end entity av_slave;
 
 architecture rtl of av_slave is
 	-- avalon readable / writable registers
-	signal NNParamsetReg, NNParamsetNext : std_logic;
-	signal RTDataReadyReg, RTDataReadyNext : std_logic;
-	signal ReadingActiveReg, ReadingActiveNext : std_logic;
-	signal StatusCtrllerReg, StatusCtrllerNext : std_logic_vector(2 downto 0); -- not writable
+	signal start_algoReg, start_algoNext : std_logic;
+	signal xOCRAM_b_modeReg, xOCRAM_b_modeNext : std_logic;
+	signal algoStateReg, algoStateNext : std_logic_vector(2 downto 0); -- not writable
 	signal ReadAddressReg, ReadAddressNext : std_logic_vector(31 downto 0);
 	signal WriteAddressReg, WriteAddressNext : std_logic_vector(31 downto 0);
 begin
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then
-			NNParamsetReg <= '0';
-			RTDataReadyReg <= '0';
-			ReadingActiveReg <= '0';
-			StatusCtrllerReg <= (others => '0');
+			start_algoReg <= '0';
+			xOCRAM_b_modeReg <= '0';
+			algoStateReg <= (others => '0');
 			ReadAddressReg <= (others => '0');
 			WriteAddressReg <= (others => '0');
 		elsif rising_edge(clk) then
-			NNParamsetReg <= NNParamsetNext;
-			RTDataReadyReg <= RTDataReadyNext;
-			ReadingActiveReg <= ReadingActiveNext;
-			StatusCtrllerReg <= StatusCtrllerNext;
+			start_algoReg <= start_algoNext;
+			xOCRAM_b_modeReg <= xOCRAM_b_modeNext;
+			algoStateReg <= algoStateNext;
 			ReadAddressReg <= ReadAddressNext;
 			WriteAddressReg <= WriteAddressNext;
 		end if;
 	end process REG;
 	
-	READING: process(readEn, NNParamsetReg, RTDataReadyReg,ReadingActiveReg, StatusCtrllerReg, ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut) --processor wants to read a register
+	READING: process(readEn, xOCRAM_b_modeReg, start_algoReg, ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut, algoStateReg) --processor wants to read a register
 	begin
 		-- default
 		readdata <= (others => '0');
 		if readEn = '1' then
 			case slaveAddr is
 				when "000" => 
-					readdata(0) <= NNParamsetReg;
-					readdata(1) <= RTDataReadyReg;
+					readdata(0) <= start_algoReg;
+					readdata(1) <= xOCRAM_b_modeReg;
 				when "001" => 
-					readdata(0) <= ReadingActiveReg;
-					readdata(3 downto 1) <= StatusCtrllerReg;
+					readdata(2 downto 0) <= algoStateReg;
 				when "010" => 
 					readdata <= ReadAddressReg;
 				when "011" => 
@@ -85,11 +81,11 @@ begin
 		end if;						  	
 	end process READING;
 	
-	WRITING: process(writeEn, writedata, NNParamsetReg, RTDataReadyReg, ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to write a register
+	WRITING: process(writeEn, writedata, start_algoReg, xOCRAM_b_modeReg, ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to write a register
 	begin
 		-- default
-		NNParamsetNext <= NNParamsetReg;
-		RTDataReadyNext <= RTDataReadyReg;
+		start_algoNext <= start_algoReg;
+		xOCRAM_b_modeNext <= xOCRAM_b_modeReg;
 		ReadAddressNext <= ReadAddressReg;
 		WriteAddressNext <= WriteAddressReg;
 		ConvWriteEn <= (others => '0');
@@ -97,8 +93,8 @@ begin
 		if writeEn = '1' then
 			case slaveAddr is
 				when "000" => 
-					NNParamsetNext <= writedata(0);
-					RTDataReadyNext <= writedata(1); 
+					start_algoNext <= writedata(0);
+					xOCRAM_b_modeNext <= writedata(1); 
 				when "010" => 
 					ReadAddressNext <= writedata;
 				when "011" => 
@@ -118,12 +114,11 @@ begin
 	end process WRITING;
 	
 	-- status
-	StatusCtrllerNext <= CtrlStatusCtrller;
-	ReadingActiveNext <= AMReadingActive;
-	
+	algoStateNext <= algo_state;
+
 	-- output signals
 	AMWriteAddr <= WriteAddressReg; 
 	AMReadAddr <= ReadAddressReg;
-	CtrlNNParamset <= NNParamsetReg;
-	CtrlRTDataReady <= RTDataReadyReg;
+	start_algo <= start_algoReg;
+	xOCRAM_b_mode <= xOCRAM_b_modeReg;
 end architecture rtl;

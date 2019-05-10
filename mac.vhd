@@ -20,9 +20,10 @@ entity mac is
 end entity mac;
 
 architecture rtl of mac is
-	signal mul_a_reg, mul_b_reg : std_logic_vector(NBITS-1 downto 0);
+	signal mul_a_reg, mul_a_next : std_logic_vector(NBITS-1 downto 0);
+	signal mul_b_reg, mul_b_next : std_logic_vector(NBITS-1 downto 0);
 	signal acc_reg, acc_next : std_logic_vector(2*NBITS+NACC-1 downto 0);
-	signal mul_reg, mul_next : std_logic_vector(2*NBITS-1 downto 0);
+	signal mul_o_reg, mul_o_next : std_logic_vector(2*NBITS-1 downto 0);
 	--signal mul_o : std_logic_vector(2*NBITS-1 downto 0);
 begin
 	REG: process(clk, rstB)
@@ -37,8 +38,13 @@ begin
 			mul_a_reg <= mul_a_next;
 			mul_b_reg <= mul_b_next;
 			mul_o_reg <= mul_o_next;
+		end if;
 	end process;
 	
-	mul_next <= std_logic_vector(signed(mul_a_reg)*signed(mul_b_reg));
-	acc_next <= std_logic_vector(signed(acc_reg)+signed(mul_o)) when clear = '0' else (others => 0);
-end architecture mac;
+	mul_a_next <= mul_a;
+	mul_b_next <= mul_b;
+	mul_o_next <= std_logic_vector(signed(mul_a_reg)*signed(mul_b_reg));
+	acc_next <= std_logic_vector(signed(acc_reg)+signed(mul_o_reg)) when clear = '0' else
+					std_logic_vector(to_signed(to_integer(signed(mul_o_reg)),acc_next'length));
+	mac_o <= acc_reg when clear = '1' else (others => 'X');
+end architecture rtl;

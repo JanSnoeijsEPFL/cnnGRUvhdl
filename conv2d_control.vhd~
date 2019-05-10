@@ -26,7 +26,7 @@ entity conv2d_control is
 end entity conv2d_control;
 
 architecture rtl of conv2d_control is
-	type FSM is (sleep,line_even, line_odd, bias);
+	type FSM is (sleep,line_even, line_odd, bias,new_filter);
 	signal state_reg, state_next : FSM;
 	signal wait_CntrEnable : std_logic;
 	signal wait_CntrReset : std_logic;
@@ -81,15 +81,15 @@ begin
 					line_CntrReset <= '1';
 					filter_CntrReset <= '1';
 					state_next <= line_even;
-					line_CntrEnable <= '1';
 				end if;
 			when line_even =>
 				wait_CntrEnable <= '1';
 				if wait_CntrEnd = '1' then
 					state_next <= line_odd;
-					if line_CntrVal = "00010" and filter_CntrEnd = '0' then
+					if line_CntrVal = "00001" and filter_CntrEnd = '0' then
 						start_sampling <= '1';
 					end if;
+					line_CntrEnable <= '1';
 				end if;
 			when line_odd =>
 				wait_CntrEnable <= '1';
@@ -101,16 +101,17 @@ begin
 					--end if;
 				end if;
 			when bias =>
-				line_CntrEnable <= '1';
 				if line_CntrEnd = '1' then
-					filter_CntrEnable <= '1';
-					wait_CntrReset <= '1';
-					line_CntrReset <= '1';
-					if filter_CntrEnd = '1' then
-						state_next <= sleep;
-					else
-						state_next <= line_even;
-					end if;
+					state_next <= new_filter;
+				else
+					state_next <= line_even;
+				end if;
+			when new_filter =>
+				wait_CntrReset <= '1';
+				line_CntrReset <= '1';
+				filter_CntrEnable <= '1';
+				if filter_CntrEnd = '1' then
+					state_next <= sleep;
 				else
 					state_next <= line_even;
 				end if;
@@ -149,8 +150,6 @@ begin
 				param <= conv2d_reg(9*NBITS-1 downto 8*NBITS);
 			elsif state_reg = bias then
 				param <= conv2d_reg(10*NBITS-1 downto 9 *NBITS);
-			else
-				param <= (others => '0');
 			end if;
 		else
 			param <= (others => '0');

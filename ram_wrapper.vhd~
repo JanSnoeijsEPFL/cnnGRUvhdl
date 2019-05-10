@@ -119,8 +119,6 @@ architecture rtl of ram_wrapper is
 	signal uByteEnable : std_logic_vector(59 downto 0);
 	signal wByteEnable : std_logic_vector(59 downto 0);
 	signal xByteEnable : std_logic_vector(59 downto 0);
-	
-	signal xWren_b_mux : std_logic;
 begin
 	
 	uOCRAM : component gruURAM
@@ -160,7 +158,7 @@ begin
 			data_a   => xDataIn_acc,
 			data_b	=> xDataIn_b,
 			wren_a	=> xWren_acc,
-			wren_b	=> xWren_b_mux,
+			wren_b	=> xWren_hps,
 			q_a		=> xDataOut_acc,
 			q_b		=> xDataOut_b,
 			byteena_b => xByteEnable
@@ -187,10 +185,6 @@ begin
 						else (others => '1') when (xWren_acc_b = '1' and xOCRAM_b_mode = '1')
 						else (others => '0');
 	
-	xWren_b_mux <= xWren_hps when xOCRAM_b_mode = '0' else 
-						xWren_acc_b when xOCRAM_b_mode = '1' else
-						'0';
-						
 	uread: process(uDataOut_b, uReadEn)
 	begin
 		uDataOut_hps <= (others => '0');
