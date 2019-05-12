@@ -28,6 +28,7 @@ architecture rtl of comp_unit is
 	signal res_reg, res_next : std_logic_vector(NBITS-1 downto 0);
 	signal xtrunc : std_logic_vector(NBITS-1 downto 0);
 	signal xfrac_lsb : std_logic;
+	signal xEdge_cond : std_logic_vector(NBFRAC-1 downto 0);
 	begin
 
 	REG: process(clk, rstB)
@@ -45,7 +46,7 @@ architecture rtl of comp_unit is
 		res_next <= res_reg;
 		x_signed := signed(in_x);
 		--if enable = '1' then
-			if x_signed(2*NBITS+NACC-1) = '0' then -- positive number, compare to max only
+			if x_signed(2*NBITS+NACC-1) = '0'  then -- positive number, compare to max only
 				if x_signed >= signed(in_max) then
 					res_next <= out_max;
 				else
@@ -62,11 +63,13 @@ architecture rtl of comp_unit is
 	end process;
 	
 	xfrac_lsb <= in_x(NBFRAC-1); -- 4th Frac LSB
+	xEdge_cond <= in_x(NBFRAC)&in_x(NBFRAC-2 downto 0); -- middle range edge condition
+	
 	xtrunc <= in_x(2*NBITS+NACC-1) & in_x(NBFRAC*2 downto NBFRAC);
 	res <= res_reg;
-	round: process(xfrac_lsb, xtrunc)
+	round: process(xfrac_lsb, xtrunc, xEdge_cond)
 	begin
-		if xfrac_lsb = '1' then
+		if xfrac_lsb = '1' and xEdge_cond /= "0000" then
 			round_out <= std_logic_vector(signed(xtrunc)+1);
 		else
 			round_out <= xtrunc;
