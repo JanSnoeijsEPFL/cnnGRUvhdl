@@ -35,7 +35,7 @@ entity gru_control is
 		macs_x_gru : out std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 		macs_w_gru : out std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 		macs_clear_gru : out std_logic_vector(MAC_MAX-1 downto 0);
-		
+		macs_o_gru : in std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1 downto 0);
 		-- interface to comp units
 		--comp_line : out std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1  downto 0);
 		--comp_line_2 : out std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1  downto 0);
@@ -87,6 +87,7 @@ architecture rtl of gru_control is
 	signal break_CntrEnd : std_logic;
 	
 	signal macs_clear : std_logic;
+	signal trunc_mac : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 	--signal macs_out_gru : std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1 downto 0);
 	
 	constant BREAK_DELAY : natural := 4;
@@ -231,6 +232,7 @@ begin
 					state_next <= Hbias;
 				end if;
 			when Hbias => 
+				comp_mode <= "11"; -- Hard tanh
 				state_next <= ZINV1;
 			when ZINV1 =>
 				state_next <= ZINV2;
@@ -242,7 +244,6 @@ begin
 					state_next <=H_1_Z;
 				end if;
 			when H_1_Z =>
-				comp_mode <= "11"; -- Hard tanh
 				if recur_CntrVal = "0000" then
 					state_next <= sleep;
 					--finished_products <= '1';
@@ -306,10 +307,13 @@ begin
 						not z_reg when state_2_reg = ZINV1 else
 						cnst_1 when state_2_reg = ZINV2 else
 						z_reg when state_2_reg = S_Z else (others => '0');
-	
+	TRUNCATE : for i in 0 to MAC_MAX-1 generate
+		trunc_mac(NBITS-1+NBITS*i downto NBITS*i) <= macs_o_gru(NBITS-1 +(NBITS*2+NACC)*i downto (NBITS*2+NACC)*i);
+	end generate;
 	
 	z_next <= res_line when state_6_reg = Zbias else z_reg;
-	r_next <= res_line when state_6_reg = Rbias or state_6_reg = R_S or state_6_reg = ZINV2 else r_reg;
+	r_next <= res_line when state_6_reg = Rbias or state_6_reg = R_S else
+				trunc_mac when state_5_reg = ZINV2 else r_reg;
 	h_next <= res_line when state_6_reg = Hbias else h_reg;
 	s_next <= res_line when state_6_reg = S_Z or (recur_CntrVal = "0000" and state_6_reg = H_1_Z) else s_reg;
 	

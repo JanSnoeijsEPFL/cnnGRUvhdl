@@ -559,6 +559,7 @@ begin
 		macs_x_gru => macs_x_gru,
 		macs_w_gru => macs_w_gru,
 		macs_clear_gru => macs_clear_gru,
+		macs_o_gru => macs_o,
 	
 		res_line => res_line,
 		
