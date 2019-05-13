@@ -76,7 +76,7 @@ architecture rtl of comp_unit is
 			round <= xtrunc;
 		end if;
 	end process;
-	
+
 	round_out <= round;
 	hs_out <= std_logic_vector(shift_right(signed(round), 2)+8) when round(1) = '0' or (round(2) = '0' and round(1 downto 0) = "10") else
 				std_logic_vector(shift_right(signed(round), 2)+9); -- the shift right operation implies another truncation
