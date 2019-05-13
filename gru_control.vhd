@@ -57,6 +57,8 @@ architecture rtl of gru_control is
 	signal r_reg, r_next : std_logic_vector(NBOUT*NBITS-1 downto 0);
 	signal z_reg, z_next : std_logic_vector(NBOUT*NBITS-1 downto 0);
 	signal h_reg, h_next : std_logic_vector(NBOUT*NBITS-1 downto 0);
+	signal trig_reg, trig_next : std_logic;
+	signal trig_1_reg, trig_1_next : std_logic;
 	--signal dir_reg, dir_next : std_logic_vector(NBOUT*(2*NBITS+NACC)-1 downto 0);
 	--signal rec_reg, rec_next : std_logic_vector(NBOUT*(2*NBITS+NACC)-1 downto 0);
 	signal z_inv : std_logic_vector(NBOUT*NBITS-1 downto 0);
@@ -125,6 +127,8 @@ begin
 			state_5_reg <= sleep;
 			state_6_reg <= sleep;
 			state_7_reg <= sleep;
+			trig_reg <= '0';
+			trig_1_reg <= '0';
 			--cycle_lat_reg <= '0';
 		elsif rising_edge(clk) then
 			--s_1_reg <= s_1_next;
@@ -132,6 +136,8 @@ begin
 			z_reg <= z_next;
 			r_reg <= r_next;
 			h_reg <= h_next;
+			trig_reg <= trig_next;
+			trig_1_reg <= trig_1_next;
 			state_reg <= state_next;
 			state_1_reg <= state_1_next;
 			state_2_reg <= state_2_next;
@@ -153,7 +159,10 @@ begin
 	state_6_next <= state_5_reg;
 	state_7_next <= state_6_reg;
 	
-	NSL: process(state_reg, trigger_gru, recur_CntrVal, dir_CntrEnd, rec_CntrEnd, break_CntrEnd)
+	trig_next <= trigger_gru;
+	trig_1_next <= trig_reg;
+	
+	NSL: process(state_reg, trig_1_reg, recur_CntrVal, dir_CntrEnd, rec_CntrEnd, break_CntrEnd)
 	begin
 		state_next <= state_reg;
 		dir_CntrEnable <= '0';
@@ -166,7 +175,7 @@ begin
 		--finished_products <= '0';
 		case state_reg is
 			when sleep =>
-				if trigger_gru = '1' then
+				if trig_1_reg = '1' then
 					state_next <= Zdir;
 					dir_CntrReset <= '1';
 					rec_CntrReset <= '1';
@@ -271,7 +280,7 @@ begin
 						(others => '0');
 	
 	-- read from Fifo
-	fifo_rdreq <= '1' when state_2_reg = Zdir or state_2_reg = Rdir or state_2_reg = Hdir 
+	fifo_rdreq <= '1' when state_1_reg = Zdir or state_1_reg = Rdir or state_1_reg = Hdir 
 					  else '0';
 	
 	-- control MAC_MATRIX (clear mac + sample the outputs)
