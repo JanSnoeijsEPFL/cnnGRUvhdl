@@ -78,7 +78,7 @@ architecture rtl of comp_unit is
 	
 	hard_sigm: process(xtrunc)
 	begin
-		hs_out <= std_logic_vector(shift_left(signed(xtrunc), 2)+8) when xtrunc(1) = '0' or when (xtrunc(2) = '0' and xtrunc(1 downto 0) = "10") else
+		hs_out <= std_logic_vector(shift_right(signed(xtrunc), 2)+8) when xtrunc(1) = '0' or when (xtrunc(2) = '0' and xtrunc(1 downto 0) = "10") else
 					std_logic_vector(shift_right(signed(xtrunc), 2)+9); -- the shift right operation implies another truncation
 	end process;
 	
