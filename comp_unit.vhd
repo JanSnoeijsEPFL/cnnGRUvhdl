@@ -29,7 +29,7 @@ architecture rtl of comp_unit is
 	signal xtrunc : std_logic_vector(NBITS-1 downto 0);
 	signal xfrac_lsb : std_logic;
 	signal xEdge_cond : std_logic_vector(NBFRAC-1 downto 0);
-	signal round : std_logic_vector(NBITS-1 downto 0);
+	signal xround : std_logic_vector(NBITS-1 downto 0);
 	begin
 
 	REG: process(clk, rstB)
@@ -71,15 +71,15 @@ architecture rtl of comp_unit is
 	round: process(xfrac_lsb, xtrunc, xEdge_cond)
 	begin
 		if xfrac_lsb = '1' and xEdge_cond /= "0000" then
-			round <= std_logic_vector(signed(xtrunc)+1);
+			xround <= std_logic_vector(signed(xtrunc)+1);
 		else
-			round <= xtrunc;
+			xround <= xtrunc;
 		end if;
 	end process;
 
-	round_out <= round;
-	hs_out <= std_logic_vector(shift_right(signed(round), 2)+8) when round(1) = '0' or (round(2) = '0' and round(1 downto 0) = "10") else
-				std_logic_vector(shift_right(signed(round), 2)+9); -- the shift right operation implies another truncation
+	round_out <= xround;
+	hs_out <= std_logic_vector(shift_right(signed(xround), 2)+8) when xround(1) = '0' or (xround(2) = '0' and xround(1 downto 0) = "10") else
+				std_logic_vector(shift_right(signed(xround), 2)+9); -- the shift right operation implies another truncation
 	
 end architecture;
  
