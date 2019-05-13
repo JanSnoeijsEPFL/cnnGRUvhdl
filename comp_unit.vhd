@@ -78,7 +78,7 @@ architecture rtl of comp_unit is
 	end process;
 
 	round_out <= xround;
-	hs_out <= std_logic_vector(shift_right(signed(xround), 2)+8) when xround(1) = '0' or (xround(2) = '0' and xround(1 downto 0) = "10") else
+	hs_out <= std_logic_vector(shift_right(signed(xround), 2)+8) when xround(1) = '0' or xround(2 downto 0) = "010" else
 				std_logic_vector(shift_right(signed(xround), 2)+9); -- the shift right operation implies another truncation
 	
 end architecture;
