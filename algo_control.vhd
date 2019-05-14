@@ -18,7 +18,10 @@ entity algo_control is
 		start_conv2d : out std_logic;
 		trig_serializer : out std_logic;
 		recur_iter : out std_logic_vector(3 downto 0);
-		trigger_gru : out std_logic
+		trigger_gru : out std_logic;
+		hps_write_new_batch : out std_logic;
+		hps_DEBUG_read : out std_logic
+		
 	);
 end entity algo_control;
 
@@ -63,17 +66,21 @@ begin
 				state_next <= gru;
 				trigger_gru <= '1';
 			when gru => 
+				hps_write_new_batch <= '1';
 				if gru_end = '1' then
 					state_next <= wait_trig;
 				end if;
 			when wait_trig =>
+				hps_DEBUG_read <= '1';
 				if recur_CntrEnd = '1' and start_algo = '1' then --  has to be deasserted by processor
-					state_next <= dense;
-				elsif DEBUG = 1 then
-					state_next <= sleep;
-				else
 					state_next <= recur;
-			end if;
+				elsif start_algo = '1' then
+					if DEBUG = 1 then
+						state_next <= sleep;
+					else
+						state_next <= recur;
+					end if;
+				end if;
 			when recur =>
 				recur_CntrEnable <= '1';
 				state_next <= conv2d;

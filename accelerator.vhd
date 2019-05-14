@@ -189,6 +189,9 @@ architecture rtl of accelerator is
 	signal xAddress_b_maxp : std_logic_vector(xlog2NBWords-1 downto 0);
 	signal xWren_b_maxp : std_logic;
 	
+	signal hps_write_new_batch : std_logic;
+	signal hps_DEBUG_read : std_logic;
+	
 	component fifo_x
 		PORT
 		(
@@ -254,11 +257,13 @@ begin
 		readdata => ASreaddata,
 		writedata => ASwritedata,
 	
-		AMWriteAddr => ASWriteAddr,
-		AMReadAddr => ASReadAddr,
+		--AMWriteAddr => ASWriteAddr,
+		--AMReadAddr => ASReadAddr,
 		
 		start_algo => start_algo,
 		algo_state => algo_state,
+		hps_write_new_batch => hps_write_new_batch,
+		hps_DEBUG_read => hps_DEBUG_read,
 		
 		ConvIn => ConvRegIn,
 		ConvOut => ConvRegOut,
@@ -383,7 +388,9 @@ begin
 		start_conv2d => start_conv2d,
 		trig_serializer => trig_serializer,
 		recur_iter => algo_recur_iter,
-		trigger_gru => trigger_gru
+		trigger_gru => trigger_gru,
+		hps_write_new_batch => hps_write_new_batch,
+		hps_DEBUG_read => hps_DEBUG_read
 	);
 	
 	--CONV2D
