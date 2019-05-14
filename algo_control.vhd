@@ -23,7 +23,7 @@ entity algo_control is
 end entity algo_control;
 
 architecture rtl of algo_control is
-	type FSM is (sleep,recur, conv2d,maxp, gru, dense);
+	type FSM is (sleep,recur, conv2d,maxp, gru, dense, wait_trig);
 	signal state_reg, state_next : FSM;
 	signal recur_CntrEnable : std_logic;
 	signal recur_CntrReset : std_logic;
@@ -50,7 +50,7 @@ begin
 		case state_reg is
 			when sleep =>
 				recur_CntrReset <= '1';
-				if start_algo = '1' then
+				if start_algo = '1' then --  has to be deasserted by processor
 					state_next <= conv2d;
 					start_conv2d <= '1';
 				end if;
@@ -64,18 +64,20 @@ begin
 				trigger_gru <= '1';
 			when gru => 
 				if gru_end = '1' then
-					state_next <= recur;
+					state_next <= wait_trig;
 				end if;
-			when recur =>
-				recur_CntrEnable <= '1';
-				if recur_CntrEnd = '1' then
+			when wait_trig =>
+				if recur_CntrEnd = '1' and start_algo = '1' then --  has to be deasserted by processor
 					state_next <= dense;
 				elsif DEBUG = 1 then
 					state_next <= sleep;
 				else
-					state_next <= conv2d;
-					start_conv2d <= '1';
+					state_next <= recur;
 			end if;
+			when recur =>
+				recur_CntrEnable <= '1';
+				state_next <= conv2d;
+				start_conv2d <= '1';
 			when dense =>
 				if dense_end = '1' then
 					state_next <= sleep;
