@@ -50,6 +50,8 @@ begin
 		trig_serializer <= '0';
 		trigger_gru <= '0';
 		state_next <= state_reg;
+		hps_write_new_batch <= '0';
+		hps_DEBUG_read <= '0';
 		case state_reg is
 			when sleep =>
 				recur_CntrReset <= '1';
