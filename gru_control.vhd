@@ -302,7 +302,8 @@ begin
 	
 	
 	macs_x_gru <= fifo_data_vect  when state_2_reg = Zdir or state_2_reg = Rdir or state_2_reg  = Hdir else
-						s_reg when state_2_reg = Zrec or state_2_reg = Rrec or state_2_reg = Hrec or state_2_reg = R_S or state_2_reg = S_Z else
+						s_reg_vect when state_2_reg = Zrec or state_2_reg = Rrec or state_2_reg = Hrec else
+						s_reg when state_2_reg = R_S or state_2_reg = S_Z else
 						cnst_1 when state_2_reg = ZINV1 else
 						cnst_17 when state_2_reg = ZINV2 else
 						h_reg when state_2_reg = H_1_Z else 
