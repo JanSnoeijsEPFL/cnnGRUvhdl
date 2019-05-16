@@ -267,7 +267,7 @@ begin
 		end case;
 	end process;
 	
-	comp_mode <= "01" when state_5_reg = Zbias or state_5_reg = Rbias else
+	comp_mode <= "10" when state_5_reg = Zbias or state_5_reg = Rbias else
 					 "11" when state_5_reg = Hbias else
 					 "00";
 	wocram_addr <= '0'& dir_CntrVal when state_reg = Zdir else
