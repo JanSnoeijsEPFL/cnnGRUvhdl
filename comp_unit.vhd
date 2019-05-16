@@ -78,8 +78,8 @@ architecture rtl of comp_unit is
 	end process;
 
 	round_out <= xround;
-	hs_out <= std_logic_vector(shift_right(signed(x_trunc), 2)+8) when (in_x(NBFRAC+2-1)= '0' or in_x(NBFRAC+2 downto 0) = "0100000") else
-				std_logic_vector(shift_right(signed(x_trunc), 2)+9); -- the shift right operation implies another truncation
+	hs_out <= std_logic_vector(shift_right(signed(xtrunc), 2)+8) when (in_x(NBFRAC+2-1)= '0' or in_x(NBFRAC+2 downto 0) = "0100000") else
+				std_logic_vector(shift_right(signed(xtrunc), 2)+9); -- the shift right operation implies another truncation
 	
 end architecture;
  
