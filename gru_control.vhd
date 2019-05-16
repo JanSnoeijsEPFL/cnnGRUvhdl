@@ -72,8 +72,8 @@ architecture rtl of gru_control is
 	signal state_6_reg, state_6_next : FSM;
 	signal state_7_reg, state_7_next : FSM;
 	--- NOTE: reuse r_reg to store r*s_1 (r not used afterwards)
-	signal recCntr_1_reg, recCntr1_next : std_logic_vector(6 downto 0);
-	signal recCntr_2_reg, recCntr2_next : std_logic_vector(6 downto 0);
+	signal recCntr_1_reg, recCntr_1_next : std_logic_vector(6 downto 0);
+	signal recCntr_2_reg, recCntr_2_next : std_logic_vector(6 downto 0);
 	
 	signal dir_CntrVal : std_logic_vector(10 downto 0);
 	signal dir_CntrReset : std_logic;
@@ -165,7 +165,7 @@ begin
 	
 	trig_next <= trigger_gru;
 	trig_1_next <= trig_reg;
-	
+	rec_CntrVal
 	recCntr_1_next <= rec_CntrVal;
 	recCntr_2_next <= recCntr_1_reg;
 	
