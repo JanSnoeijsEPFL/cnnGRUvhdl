@@ -177,7 +177,6 @@ begin
 		rec_CntrReset <= '0';
 		break_CntrEnable <= '0';
 		break_CntrReset <= '0';
-		comp_mode <= "00";
 		--finished_products <= '0';
 		case state_reg is
 			when sleep =>
@@ -211,7 +210,6 @@ begin
 				end if;
 			when Rdir => 
 				-- mode for Z
-				comp_mode <= "10"; -- Hard sigmoid
 				dir_CntrEnable <= '1';
 				if dir_CntrEnd = '1' then
 						state_next <= Rrec;
@@ -232,7 +230,6 @@ begin
 				state_next <= Hdir;
 			when Hdir => 
 				--mode for R
-				comp_mode <= "10"; -- Hard sigmoid
 				dir_CntrEnable <= '1';
 				if dir_CntrEnd = '1' then
 					if recur_CntrVal = "0000" then
@@ -247,7 +244,6 @@ begin
 					state_next <= Hbias;
 				end if;
 			when Hbias => 
-				comp_mode <= "11"; -- Hard tanh
 				state_next <= ZINV1;
 			when ZINV1 =>
 				state_next <= ZINV2;
@@ -271,7 +267,9 @@ begin
 		end case;
 	end process;
 	
-	
+	comp_mode <= "01" when state_5_reg = Zbias or state_5_reg = Rbias else
+					 "11" when state_5_reg = Hbias else
+					 "00";
 	wocram_addr <= '0'& dir_CntrVal when state_reg = Zdir else
 						std_logic_vector(unsigned(dir_CntrVal) + WOFFSET) when state_reg = Rdir else
 						std_logic_vector(unsigned(dir_CntrVal) + WOFFSET+WOFFSET) when state_reg  = Hdir else 
