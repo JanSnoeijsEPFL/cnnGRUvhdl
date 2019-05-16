@@ -297,7 +297,6 @@ begin
 	macs_clear <= '1' when state_5_reg = Zbias or state_5_reg = Rbias or state_5_reg = Hbias or 
 							state_5_reg = ZINV2 or state_5_reg = R_S or state_5_reg = S_Z or (state_5_reg = H_1_Z and recur_CntrVal = "0000")
 						else '0';
-	o count 5 cycles).
 
 	gen_vect : for i in 0 to MAC_MAX-1 generate
 		cnst_ones(NBITS*i + NBITS-1 downto NBITS*i) <= const_one;
