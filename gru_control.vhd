@@ -331,15 +331,15 @@ begin
 	x_ocram_DEBUG_addr_b <=  std_logic_vector(DEBUG_OFFSET) when state_7_reg = Zbias else
 									std_logic_vector(DEBUG_OFFSET+1) when state_7_reg = Rbias else
 									std_logic_vector(DEBUG_OFFSET+2) when state_7_reg = Hbias else
-									std_logic_vector(DEBUG_OFFSET+3) when state_7_reg = S_Z  or (recur_CntrVal = "0000" and state_6_reg = H_1_Z) else
+									std_logic_vector(DEBUG_OFFSET+3) when state_7_reg = S_Z  or (recur_CntrVal = "0000" and state_7_reg = H_1_Z) else
 									(others => '0');
 	x_ocram_DEBUG_data_b <= z_reg when state_7_reg = Zbias else
 							r_reg when state_7_reg = Rbias else
 							h_reg when state_7_reg = Hbias else
-							s_reg when state_7_reg = S_Z  or (recur_CntrVal = "0000" and state_6_reg = H_1_Z) else
+							s_reg when state_7_reg = S_Z  or (recur_CntrVal = "0000" and state_7_reg = H_1_Z) else
 							(others => '0');
 	x_ocram_DEBUG_wren_b <= '1' when state_7_reg = Zbias or state_7_reg = Rbias or state_7_reg = Hbias 
-								or state_7_reg = S_Z or  (recur_CntrVal = "0000" and state_6_reg = H_1_Z) else '0';
+								or state_7_reg = S_Z or  (recur_CntrVal = "0000" and state_7_reg = H_1_Z) else '0';
 								
 								
 	extend: for i in 0 to MAC_MAX-1 generate
