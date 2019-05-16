@@ -72,6 +72,8 @@ architecture rtl of gru_control is
 	signal state_6_reg, state_6_next : FSM;
 	signal state_7_reg, state_7_next : FSM;
 	--- NOTE: reuse r_reg to store r*s_1 (r not used afterwards)
+	signal recCntr_1_reg, recCntr1_next : std_logic_vector(6 downto 0);
+	signal recCntr_2_reg, recCntr2_next : std_logic_vector(6 downto 0);
 	
 	signal dir_CntrVal : std_logic_vector(10 downto 0);
 	signal dir_CntrReset : std_logic;
@@ -107,7 +109,6 @@ architecture rtl of gru_control is
 	
 	signal s_reg_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 	signal fifo_data_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-	--signal cycle_lat_reg, cycle_lat_next : std_logic;
 
 begin
 
@@ -129,6 +130,8 @@ begin
 			state_7_reg <= sleep;
 			trig_reg <= '0';
 			trig_1_reg <= '0';
+			recCntr_1_reg <= (others => '0');
+			recCntr_2_reg <= (others => '0');
 			--cycle_lat_reg <= '0';
 		elsif rising_edge(clk) then
 			--s_1_reg <= s_1_next;
@@ -146,7 +149,8 @@ begin
 			state_5_reg <= state_5_next;
 			state_6_reg <= state_6_next;
 			state_7_reg <= state_7_next;
-			--cycle_lat_reg <= cycle_lat_next;
+			recCntr_1_reg <= recCntr_1_next;
+			recCntr_2_reg <= recCntr_2_next;
 		end if;
 	end process;
 	
@@ -161,6 +165,9 @@ begin
 	
 	trig_next <= trigger_gru;
 	trig_1_next <= trig_reg;
+	
+	recCntr_1_next <= rec_CntrVal;
+	recCntr_2_next <= recCntr_1_reg;
 	
 	NSL: process(state_reg, trig_1_reg, recur_CntrVal, dir_CntrEnd, rec_CntrEnd, break_CntrEnd)
 	begin
@@ -297,7 +304,7 @@ begin
 		cnst_17(NBITS*i + NBITS-1 downto NBITS*i) <= const_17;
 		cnst_1(NBITS*i + NBITS-1 downto NBITS*i) <= const_1;
 		fifo_data_vect(NBITS*i +NBITS-1 downto NBITS*i) <= fifo_data;
-		s_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= s_reg(NBITS*to_integer(unsigned(rec_CntrVal))+NBITS-1 downto NBITS*to_integer(unsigned(rec_CntrVal)));
+		s_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= s_reg(NBITS*to_integer(unsigned(recCntr_2_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_2_reg)));
 	end generate;
 	
 	
