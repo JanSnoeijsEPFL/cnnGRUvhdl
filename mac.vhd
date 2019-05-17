@@ -46,5 +46,5 @@ begin
 	mul_o_next <= std_logic_vector(signed(mul_a_reg)*signed(mul_b_reg));
 	acc_next <= std_logic_vector(signed(acc_reg)+signed(mul_o_reg)) when clear = '0' else
 					std_logic_vector(to_signed(to_integer(signed(mul_o_reg)),acc_next'length));
-	mac_o <= acc_reg when clear = '1' else (others => 'X');
+	mac_o <= acc_reg when clear = '1' else (others => '0');
 end architecture rtl;
