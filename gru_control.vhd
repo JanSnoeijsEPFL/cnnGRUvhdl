@@ -108,6 +108,7 @@ architecture rtl of gru_control is
 	signal cnst_1 : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 	
 	signal s_reg_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
+	signal r_reg_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 	signal fifo_data_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 
 begin
@@ -302,12 +303,15 @@ begin
 		cnst_1(NBITS*i + NBITS-1 downto NBITS*i) <= const_1;
 		fifo_data_vect(NBITS*i +NBITS-1 downto NBITS*i) <= fifo_data;
 		s_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= s_reg(NBITS*to_integer(unsigned(recCntr_2_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_2_reg)));
+		r_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= r_reg(NBITS*to_integer(unsigned(recCntr_2_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_2_reg)));
 	end generate;
 	
 	
 	macs_x_gru <= fifo_data_vect  when state_2_reg = Zdir or state_2_reg = Rdir or state_2_reg  = Hdir else
-						s_reg_vect when state_2_reg = Zrec or state_2_reg = Rrec or state_2_reg = Hrec else
-						s_reg when state_2_reg = R_S or state_2_reg = S_Z else
+						s_reg_vect when state_2_reg = Zrec or state_2_reg = Rrec else
+						r_reg_vect when state_2_reg = Hrec else
+						r_reg when state_2_reg = R_S  else
+						s_reg when state_2_reg = S_Z else
 						cnst_1 when state_2_reg = ZINV1 else
 						cnst_17 when state_2_reg = ZINV2 else
 						h_reg when state_2_reg = H_1_Z else 
