@@ -130,7 +130,7 @@ begin
 	process
 		variable seed1, seed2 : positive;              -- seed values for random generator
 		variable rand: real;   -- random real-number value in range 0 to 1.0  
-		variable range_of_rand : real := 2.0**30-1.0;    -- the range of random values created will be 0 to +1000.
+		variable range_of_rand : real := 2.0**5-1.0;    -- the range of random values created will be 0 to +1000.
 		variable RAMvector : std_logic_vector(31 downto 0);
 		variable rand_num : integer;
 	begin

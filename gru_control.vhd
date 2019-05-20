@@ -97,8 +97,8 @@ architecture rtl of gru_control is
 	constant BREAK_DELAY : natural := 4;
 	constant DIR_ACC : natural := 1078;
 	constant REC_ACC : natural := 100;
-	constant WOFFSET : unsigned(11 downto 0) := to_unsigned(1078, 12);
-	constant UOFFSET : unsigned(7 downto 0) := to_unsigned(100, 8);
+	constant WOFFSET : unsigned(wlog2NbWords-1 downto 0):= to_unsigned(1078,wlog2NbWords);
+	constant UOFFSET : unsigned(ulog2NbWords-1 downto 0) := to_unsigned(100, ulog2NbWords);
 	constant DEBUG_OFFSET :  unsigned(xlog2NbWords-1 downto 0) := to_unsigned(45, xlog2NbWords);
 	constant const_one : std_logic_vector(NBITS-1 downto 0) := std_logic_vector(to_unsigned(16, NBITS));
 	signal cnst_ones : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
@@ -271,14 +271,14 @@ begin
 	comp_mode <= "10" when state_5_reg = Zbias or state_5_reg = Rbias else
 					 "11" when state_5_reg = Hbias else
 					 "00";
-	wocram_addr <= std_logic_vector(to_unsigned(to_integer(unsigned(dir_CntrVal)), wocram_addr'length)) when state_reg = Zdir else
-						std_logic_vector(unsigned(dir_CntrVal) + WOFFSET) when state_reg = Rdir else
-						std_logic_vector(unsigned(dir_CntrVal) + WOFFSET+WOFFSET) when state_reg  = Hdir else
+	wocram_addr <= std_logic_vector(resize(unsigned(dir_CntrVal), wocram_addr'length)) when state_reg = Zdir else
+						std_logic_vector(resize(unsigned(dir_CntrVal), wocram_addr'length) + WOFFSET) when state_reg = Rdir else
+						std_logic_vector(resize(unsigned(dir_CntrVal), wocram_addr'length) + WOFFSET+WOFFSET) when state_reg  = Hdir else
 						(others => '0');
 
-	uocram_addr <= std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal)), uocram_addr'length))  when state_reg = Zrec else
-						std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal) + UOFFSET), uocram_addr'length)) when state_reg = Rrec else
-						std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal) + UOFFSET+UOFFSET), uocram_addr'length)) when state_reg  = Hrec else
+	uocram_addr <= std_logic_vector(resize(unsigned(rec_CntrVal),uocram_addr'length))  when state_reg = Zrec else
+						std_logic_vector(resize(unsigned(rec_CntrVal),uocram_addr'length) + UOFFSET) when state_reg = Rrec else
+						std_logic_vector(resize(unsigned(rec_CntrVal),uocram_addr'length) + UOFFSET+UOFFSET) when state_reg  = Hrec else
 					   std_logic_vector(to_unsigned(300, uocram_addr'length)) when state_reg = Zbias else
 						std_logic_vector(to_unsigned(301, uocram_addr'length)) when state_reg = Rbias else
 						std_logic_vector(to_unsigned(302, uocram_addr'length)) when state_reg = Hbias else
