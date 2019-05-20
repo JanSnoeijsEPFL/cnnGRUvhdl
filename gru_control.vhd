@@ -276,7 +276,7 @@ begin
 						std_logic_vector(unsigned(dir_CntrVal) + WOFFSET+WOFFSET) when state_reg  = Hdir else
 						(others => '0');
 
-	uocram_addr <= 	std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal)), uocram_addr'length)) & rec_CntrVal when state_reg = Zrec else
+	uocram_addr <= std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal)), uocram_addr'length))  when state_reg = Zrec else
 						std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal) + UOFFSET), uocram_addr'length)) when state_reg = Rrec else
 						std_logic_vector(to_unsigned(to_integer(unsigned(rec_CntrVal) + UOFFSET+UOFFSET), uocram_addr'length)) when state_reg  = Hrec else
 					   std_logic_vector(to_unsigned(300, uocram_addr'length)) when state_reg = Zbias else
