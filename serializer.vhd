@@ -185,7 +185,7 @@ begin
 	
 	clear_fifo <= '0';
 
-	xocram_addr_b <= std_logic_vector(unsigned(IN_OFFSET) + unsigned(wraddr_CntrVal));
+	xocram_addr_b <= std_logic_vector(resize(unsigned(IN_OFFSET),xocram_addr_b'length) + resize(unsigned(wraddr_CntrVal),xocram_addr_b'length));
 	
 	
 	rdaddr_cntr_inst : entity work.counter(rtl)

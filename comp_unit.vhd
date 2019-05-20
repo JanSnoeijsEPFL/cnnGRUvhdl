@@ -117,14 +117,14 @@ architecture rtl of comp_unit is
 	round: process(xfrac_lsb, xtrunc, xEdge_cond)
 	begin
 		if xfrac_lsb = '1' and xEdge_cond /= "0000" then
-			round_out <= std_logic_vector(signed(xtrunc)+1);
+			round_out <= std_logic_vector(signed(xtrunc)+to_signed(1, round_out'length));
 		else
 			round_out <= xtrunc;
 		end if;
 	end process;
 	
-	hs_out <= std_logic_vector(shift_right(signed(xtrunc), 2)+8) when (in_x(NBFRAC+2-1)= '0' or in_x(NBFRAC+2 downto 0) = "0100000") else
-				std_logic_vector(shift_right(signed(xtrunc), 2)+9); -- the shift right operation implies another truncation
+	hs_out <= std_logic_vector(shift_right(signed(xtrunc), 2)+to_signed(8, hs_out'length)) when (in_x(NBFRAC+2-1)= '0' or in_x(NBFRAC+2 downto 0) = "0100000") else
+				std_logic_vector(shift_right(signed(xtrunc), 2)+to_signed(9, hs_out'length)); -- the shift right operation implies another truncation
 	
 end architecture;
  
