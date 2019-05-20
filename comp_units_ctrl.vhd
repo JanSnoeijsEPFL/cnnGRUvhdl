@@ -48,28 +48,7 @@ architecture rtl of comp_units_ctrl is
 	signal out_min : std_logic_vector(NBITS-1 downto 0);
 	
 begin
-	
-	in_max <=  QUANT_MAX_IN when mode = "00" else
-				  QUANT_MAX_IN when mode = "01" else
-				  QUANT_MAX_IN when mode = "10" else
-				  HT_MAX_IN when mode = "11" else (others => '0');
-					  
-				
-	in_min <=  QUANT_MIN_IN when mode = "00" else
-				  (others => '0') when mode = "01" else
-				  QUANT_MIN_IN when mode = "10" else
-				  HT_MIN_IN when mode = "11" else (others => '0');
 
-					  
-	out_max <=  QUANT_MAX_OUT when mode = "00" else
-					QUANT_MAX_OUT when mode = "01" else
-					HS_MAX when mode = "10" else
-					HT_MAX_OUT when mode = "11" else (others => '0');
-	
-	out_min <=  QUANT_MIN_OUT when mode = "00" else
-					(others => '0') when mode = "01" else
-					HS_MIN when mode = "10" else
-					HT_MIN_OUT when mode = "11" else (others => '0');
 					
 
 						
@@ -81,8 +60,7 @@ begin
 		out_max_line(NBITS-1+i*NBITS downto 0+i*NBITS) <= out_max;
 	end generate;
 	
-	op_line <= round_line when (mode = "00" or mode = "01" or mode = "11") else
-							hs_line when mode = "10" else (others => '0');
+
 end architecture;
  
 

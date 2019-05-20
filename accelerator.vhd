@@ -442,35 +442,29 @@ begin
 		clk => clk,
 		rstB => rstB,
 		x_line => x_comp_line,
-		op_line => op_line,
-		in_max_line => in_max_line,
-		in_min_line => in_min_line,
-		out_max_line => out_max_line,
-		out_min_line => out_min_line,
-		res_line => res_line, -- output to write to port B
-		round_line => round_line,
-		hs_line => hs_line
+		mode => comp_mode,
+		res_line => res_line -- output to write to port B
 	);
 	-- COMP UNIT CTRL
 	
-	comp_units_ctrl_inst : entity work.comp_units_ctrl(rtl)
-	generic map(
-		MAC_MAX => MAC_MAX,
-		NBITS => NBITS,
-		NACC => NACC
-	)
-	port map(
-		clk => clk,
-		rstB => rstB,
-		mode => comp_mode,
-		round_line => round_line,
-		hs_line => hs_line,
-		op_line => op_line,
-		in_max_line => in_max_line,
-		in_min_line => in_min_line,
-		out_max_line => out_max_line,
-		out_min_line => out_min_line
-	);
+	--comp_units_ctrl_inst : entity work.comp_units_ctrl(rtl)
+	--generic map(
+	--	MAC_MAX => MAC_MAX,
+	--	NBITS => NBITS,
+	--	NACC => NACC
+	--)
+	--port map(
+	--	clk => clk,
+	--	rstB => rstB,
+	--	mode => comp_mode,
+	--	round_line => round_line,
+	--	hs_line => hs_line,
+	--	op_line => op_line,
+	--	in_max_line => in_max_line,
+	--	in_min_line => in_min_line,
+	--	out_max_line => out_max_line,
+	--	out_min_line => out_min_line
+   --	);
 
 	maxp_matrix_inst : entity work.maxp_matrix(rtl)
 	generic map(

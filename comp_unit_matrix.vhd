@@ -13,14 +13,9 @@ entity comp_unit_matrix is
 		clk : in std_logic;
 		rstB : in std_logic;
 		x_line : in std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1 downto 0);
-		op_line : in std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-		in_max_line : in std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1 downto 0);
-		in_min_line : in std_logic_vector(MAC_MAX*(2*NBITS+NACC)-1 downto 0);
-		out_max_line : in std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-		out_min_line : in std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-		res_line : out std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-		round_line : out std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-		hs_line : out std_logic_vector(MAC_MAX*NBITS-1 downto 0)
+		mode : in std_logic_vector(1 downto 0);
+		res_line : out std_logic_vector(MAC_MAX*NBITS-1 downto 0)
+	
 	);
 end entity comp_unit_matrix;
 
@@ -34,14 +29,7 @@ architecture rtl of comp_unit_matrix is
 begin
 	convert: for i in 0 to MAC_MAX-1 generate
 		x_arr(i) <= x_line(i*(2*NBITS+NACC)+2*NBITS+NACC-1 downto i*(2*NBITS+NACC)+0);
-		op_arr(i) <= op_line(i*NBITS+NBITS-1 downto i*NBITS+0);
-		in_max_arr(i) <= in_max_line(i*(2*NBITS+NACC)+2*NBITS+NACC-1 downto i*(2*NBITS+NACC)+0);
-		in_min_arr(i) <= in_min_line(i*(2*NBITS+NACC)+2*NBITS+NACC-1 downto i*(2*NBITS+NACC)+0);
-		out_max_arr(i) <= out_max_line(i*NBITS+NBITS-1 downto i*NBITS+0);
-		out_min_arr(i) <= out_min_line(i*NBITS+NBITS-1 downto i*NBITS+0);
 		res_line(i*NBITS+NBITS-1 downto i*NBITS+0) <= res_arr(i) ;
-		round_line(i*NBITS+NBITS-1 downto i*NBITS+0) <= round_arr(i) ;
-		hs_line(i*NBITS+NBITS-1 downto i*NBITS+0) <= hs_arr(i);
 	end generate;		
 			
 	gen_matrix : for i in 0 to MAC_MAX-1 generate
@@ -55,14 +43,8 @@ begin
 			clk => clk,
 			rstB => rstB,
 			in_x => x_arr(i),
-			op_mux => op_arr(i),
-			in_max => in_max_arr(i),
-			in_min => in_min_arr(i),
-			out_max => out_max_arr(i),
-			out_min => out_min_arr(i),
-			res => res_arr(i),
-			round_out => round_arr(i),
-			hs_out => hs_arr(i)
+			mode => mode,
+			res => res_arr(i)
 		);
 	end generate;
 	
