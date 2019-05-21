@@ -60,6 +60,7 @@ architecture rtl of dense is
 	signal ram_CntrVal : std_logic_vector(d1 downto 0);
 	signal ram_CntrReset : std_logic;
 	signal ram_CntrEnable : std_logic;
+	constant DEBUG_OFFSET :  unsigned(xlog2NbWords-1 downto 0) := to_unsigned(45, xlog2NbWords);
 begin
 	
 	-- reg chain delay
@@ -183,7 +184,11 @@ begin
 	macs_x_dense <= s_final_vect;
 	macs_w_dense <= buffer_reg(to_integer(unsigned(buff_CntrVal)));
 	macs_clear <= '1' when dense_CntrEnd = '1' else '0';
-	softmax_in	<= res_dense when dense_CntrEnd_1_reg = '1';
+	softmax_in	<= res_dense when dense_CntrEnd_1_reg = '1' else (others => '0');
+	trig_softmax <= '1' when dense_CntrEnd_1_reg = '1' else '0';
+	x_ocram_data_b <= softmax_out;
+	x_ocram_addr_b <= std_logic_vector(DEBUG_OFFSET+5)
+
 	buffIter_cntr_inst : entity work.counter(rtl)
 	generic map(
 		MAX_VAL =>  INPUTS/BUFFER_SIZE --20
