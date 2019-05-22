@@ -112,7 +112,7 @@ begin
 				if init_reg = '0' then
 					fifo_wrreq <= '1';
 				end if;
-				xocram_addr_a <= std_logic_vector(resize(IN_OFFSET, xocram_addr_a'length) + resize(unsigned(rdaddr_CntrVal, xocram_addr_a'length));
+				xocram_addr_a <= std_logic_vector(resize(IN_OFFSET, xocram_addr_a'length) + resize(unsigned(rdaddr_CntrVal), xocram_addr_a'length));
 				ser_state_next <= read_F1;
 			when read_F1 =>
 				if init_reg = '0' then

@@ -29,10 +29,12 @@ entity accelerator is
 		MAX_VAL_buffer : natural := 19; --19
 		MAX_VAL_conv : natural := 2;--2
 		DEBUG : natural := 0;
-		NBITS_LUT : natural := 14;
 		NBITS_DIV : natural := 16;
 		DENSE_BUFFER_SIZE : natural := 5;
-		DENSE_OUT : natural := 3
+		DENSE_OUT : natural := 3;
+		NACC_DENSE : natural :=7;
+		U_DENSE_OFFSET : natural := 303;
+		FRAC_LUT : natural :=11
 	);
 	port(
 		clk : in std_logic;
@@ -193,10 +195,10 @@ architecture rtl of accelerator is
 	signal xAddress_b_maxp : std_logic_vector(xlog2NBWords-1 downto 0);
 	signal xWren_b_maxp : std_logic;
 	signal dense_trigger : std_logic;
-	signal dense_end : std_logic;
+	signal end_dense : std_logic;
 	signal hps_write_new_batch : std_logic;
 	signal hps_DEBUG_read : std_logic;
-	signal res_final: std_logic_vector(NBITS_DIV*OUTPUTS-1 downto 0);
+	signal res_final: std_logic_vector(NBITS_DIV*DENSE_OUT-1 downto 0);
 	
 	component fifo_x
 		PORT
@@ -601,7 +603,7 @@ begin
 	-- COMP UNIT DATA MUX
 	comp_mode <= "01" when algo_state = "010" else comp_mode_gru; --conv2d or GRU;
 	x_comp_line <= macs_o;
-	uAddress_acc <= uocrm_addr_gru when algo_state = "011" else uocram_addr_dense;
+	uAddress_acc <= uocram_addr_gru when algo_state = "011" else uocram_addr_dense;
 	uDataOut_acc <= uocram_data_gru when algo_state = "011" else uocram_data_dense;
 	dense_inst: entity work.dense(rtl)
 	generic map(
@@ -609,10 +611,12 @@ begin
 		INPUTS => NBOUT,
 		OUTPUTS => DENSE_OUT,
 		BUFFER_SIZE => DENSE_BUFFER_SIZE,
-		NBITS_LUT => NBITS_LUT,
 		NBITS_DIV=> NBITS_DIV,
-		xlog2NbWords => xlog2NbWords,
-		RAM_LINE_SIZE => RAM_LINE_SIZE
+		RAM_LINE_SIZE => RAM_LINE_SIZE,
+		U_DENSE_OFFSET => U_DENSE_OFFSET,
+		NACC_DENSE => NACC_DENSE,
+		NBFRAC => NBFRAC,
+		FRAC_LUT => FRAC_LUT
 	)
 	port map(
 		clk => clk, 
