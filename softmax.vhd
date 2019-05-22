@@ -13,8 +13,9 @@ entity softmax is
 		clk : in std_logic;
 		rstB : in std_logic;
 		x : in std_logic_vector(NBITS-1 downto 0);
-		y : out std_logic_vector(NBITS-1 downto 0);
-		trig_softmax : in std_logic
+		y : out std_logic_vector(OUTPUTS*2*NBITS_DIV-1 downto 0);
+		trig_softmax : in std_logic;
+		softmax_rdy : out std_logic
 	);	
 end entity softmax;
 
@@ -33,12 +34,14 @@ architecture rtl of softmax is
 	signal exp_CntrEnd : std_logic;
 	signal exp_CntrVal : std_logic_vector(1 downto 0);
 	signal exp_out : std_logic_vector(NBITS_LUT-1 downto 0);
+	
+	signal exp_Cntr_1_reg, exp_Cntr_1_next : std_logic_vector(1 downto 0);
 
 begin
 	
 	-- reg chain
 	state_1_next <= state_reg;
-	
+	exp_Cntr_1_next <= exp_CntrVal;
 	REG: process(clk, rstB)
 	begin
 		if rstB = '0' then
@@ -48,6 +51,8 @@ begin
 			sum_reg <= (others => '0');
 			state_reg <= sleep;
 			state_1_reg <= sleep;
+			softmax_rdy_reg <= '0';
+			exp_Cntr_1_reg <= (others => '0);
 		elsif rising_edge(clk) then
 			acc_reg <= acc_next;
 			div_reg <= div_next;
@@ -55,6 +60,8 @@ begin
 			sum_reg <= sum_next;
 			state_reg <= state_next;
 			state_1_reg <= state_1_next;
+			softmax_rdy_nreg <= softmax_rdy_next;
+			exp_Cntr_1_reg <= exp_Cntr_1_next;
 		end if;
 	end process;
 	
@@ -90,11 +97,14 @@ begin
 		x => x,
 		y => exp_out 
 		);
+	softmax_rdy_next <= '1' when state_1_reg = divide and exp_CntrEnd = '1';
+	softmax_rdy <= softmax_rdy_reg;
 	exp_next(to_integer(unsigned(exp_CntrVal)) <= exp_out when state_reg = calc_sum else exp_reg;
 	sum_next <= exp_out when state_reg = calc_sum else sum_reg;
 	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else acc_reg;
 	div_next <= std_logic_vector(unsigned(acc_reg)/unsigned(to_integer(unsigned(exp_CntrVal)))) when state_1_reg = divide else div_reg;
-	y <= div_reg;
+	y_out(NBITS_DIV*2*to_integer(unsigned(exp_Cntr_1_reg)+NBITS_DIV*2-1 downto to_integer(unsigned(exp_Cntr_1_reg)*NBITS_DIV*2)<= div_reg
+	
 	exp_cntr_inst: entity work.counter(rtl)
 	generic map(
 		MAX_VAL =>  OUTPUTS --3

@@ -20,7 +20,8 @@ entity algo_control is
 		recur_iter : out std_logic_vector(3 downto 0);
 		trigger_gru : out std_logic;
 		hps_write_new_batch : out std_logic;
-		hps_DEBUG_read : out std_logic
+		hps_DEBUG_read : out std_logic;
+		trigger_dense : out std_logic
 		
 	);
 end entity algo_control;
@@ -52,6 +53,7 @@ begin
 		state_next <= state_reg;
 		hps_write_new_batch <= '0';
 		hps_DEBUG_read <= '0';
+		trigger_dense <= '0';
 		case state_reg is
 			when sleep =>
 				recur_CntrReset <= '1';
@@ -75,7 +77,8 @@ begin
 			when wait_trig =>
 				hps_DEBUG_read <= '1';
 				if recur_CntrEnd = '1' and start_algo = '1' then --  has to be deasserted by processor
-					state_next <= recur;
+					trigger_dense <= '1';
+					state_next <= dense;
 				elsif start_algo = '1' then
 					if DEBUG = 1 then
 						state_next <= sleep;

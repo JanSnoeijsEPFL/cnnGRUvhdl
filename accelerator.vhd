@@ -28,7 +28,11 @@ entity accelerator is
 		NB_BURSTS : natural := 625;
 		MAX_VAL_buffer : natural := 19; --19
 		MAX_VAL_conv : natural := 2;--2
-		DEBUG : natural := 0
+		DEBUG : natural := 0;
+		NBITS_LUT : natural := 14;
+		NBITS_DIV : natural := 16;
+		DENSE_BUFFER_SIZE : natural := 5;
+		DENSE_OUT : natural := 3
 	);
 	port(
 		clk : in std_logic;
@@ -188,7 +192,8 @@ architecture rtl of accelerator is
 	
 	signal xAddress_b_maxp : std_logic_vector(xlog2NBWords-1 downto 0);
 	signal xWren_b_maxp : std_logic;
-	
+	signal dense_trigger : std_logic;
+	signal dense_end : std_logic;
 	signal hps_write_new_batch : std_logic;
 	signal hps_DEBUG_read : std_logic;
 	
@@ -566,8 +571,8 @@ begin
 		
 		wocram_addr => wAddress_acc,
 		wocram_data => wDataOut_acc,
-		uocram_addr => uAddress_acc,
-		uocram_data => uDataOut_acc,
+		uocram_addr => uAddress_gru,
+		uocram_data => uDataOut_gru,
 		-- output data
 		s_out => s_out,
 		comp_mode => comp_mode_gru,
@@ -595,4 +600,24 @@ begin
 	comp_mode <= "01" when algo_state = "010" else comp_mode_gru; --conv2d or GRU;
 	x_comp_line <= macs_o;
 	
+	dense_inst: entity work.dense(rtl)
+	generic map(
+		NBITS => NBITS,
+		INPUTS => NBOUT,
+		OUTPUTS => DENSE_OUT,
+		BUFFER_SIZE => DENSE_BUFFER_SIZE,
+		NBITS_LUT => NBITS_LUT,
+		NBITS_DIV=> NBITS_DIV,
+		xlog2NbWords => xlog2NbWords
+	)
+	port map(
+		clk => clk, 
+		rstB => rstB,
+		s_final => s_out,
+		dense_trigger => dense_trigger,
+		end_dense => end_dense,
+		uocram_data => uocram_data_dense,
+		uocram_addr => uocram_addr_dense,
+		y_out => res_final
+	);
 end architecture rtl;

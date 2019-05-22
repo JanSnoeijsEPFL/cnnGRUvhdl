@@ -334,7 +334,7 @@ begin
 	h_next <= res_line when state_6_reg = Hbias else h_reg;
 	s_next <= res_line when state_6_reg = S_Z or (recur_CntrVal = "0000" and state_6_reg = H_1_Z) else
 						(others => '0') when (recur_CntrVal = "0000" and state_6_reg = Zbias) else s_reg;
-
+	s_out <= s_reg;
 	finished_products <= '1' when state_7_reg = S_Z or (recur_CntrVal = "0000" and state_7_reg = H_1_Z) else '0';
 
 	x_ocram_DEBUG_addr_b <=  std_logic_vector(DEBUG_OFFSET) when state_7_reg = Zbias else
