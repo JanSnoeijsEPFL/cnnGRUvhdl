@@ -3,6 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity av_slave is
+	generic(
+		NBITS : natural := 6;
+		NBITS_DIV : natural := 16;
+		OUT_DENSE : natural := 3
 	port(
 		-- avalon interface
 		clk : in std_logic;
@@ -24,10 +28,11 @@ entity av_slave is
 		hps_DEBUG_read : in std_logic;
 		
 		--to convreg
-		ConvIn : out std_logic_vector(10*6-1 downto 0);
-		ConvOut : in std_logic_vector(10*6-1 downto 0);
+		ConvIn : out std_logic_vector(10*NBITS-1 downto 0);
+		ConvOut : in std_logic_vector(10*NBITS-1 downto 0);
 		ConvWriteEn : out std_logic_vector(10-1 downto 0);
-		xOCRAM_b_mode : out std_logic
+		xOCRAM_b_mode : out std_logic;
+		res_final : in std_logic_vector(NBITS_DIV*2*OUT_DENSE-1 downto 0);
 		
 		);
 		
@@ -41,6 +46,8 @@ architecture rtl of av_slave is
 	signal ReadAddressReg, ReadAddressNext : std_logic_vector(31 downto 0);
 	signal WriteAddressReg, WriteAddressNext : std_logic_vector(31 downto 0);
 	signal hps_ram_trigReg, hps_ram_trigNext : std_logic_vector(1 downto 0);
+	type res_arr is array(0 to OUT_DENSE-1) of std_logic_vector(NBITS_DIV*2-1 downto 0);
+	signal resReg, resNext : res_arr;
 	
 begin
 	REG: process(clk, rstB)
@@ -52,6 +59,8 @@ begin
 			ReadAddressReg <= (others => '0');
 			WriteAddressReg <= (others => '0');
 			hps_ram_trigReg <= (others => '0');
+			resReg <= (others => (others => '0'));
+			resIndexReg <= (others => '0');
 		elsif rising_edge(clk) then
 			start_algoReg <= start_algoNext;
 			xOCRAM_b_modeReg <= xOCRAM_b_modeNext;
@@ -59,11 +68,13 @@ begin
 			ReadAddressReg <= ReadAddressNext;
 			WriteAddressReg <= WriteAddressNext;
 			hps_ram_trigReg <= hps_ram_trigNext;
+			resReg <= resNext;
+			resIndexReg <= resIndexNext;
 		end if;
 	end process REG;
 	
 	READING: process(readEn, hps_ram_trigReg, xOCRAM_b_modeReg, start_algoReg, 
-							ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut) --processor wants to read a register
+							ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut, resReg, resIndexReg) --processor wants to read a register
 	begin
 		-- default
 		readdata <= (others => '0');
@@ -82,20 +93,23 @@ begin
 					readdata(29 downto 0) <= ConvOut(5*6-1 downto 0);
 				when "101" =>
 					readdata(29 downto 0) <= ConvOut(10*6-1 downto 5*6);
-				when others => 
-					readdata <= (others => '0');
+				when "110" => 
+					readdata <= resReg(to_integer(unsigned(resIndexReg));
+				when others =>
+					readdata <= (others => '0');	
 			end case;
 		end if;						  	
 	end process READING;
 	
 	WRITING: process(writeEn, writedata, start_algoReg, xOCRAM_b_modeReg,
-						ReadAddressReg, WriteAddressReg, slaveAddr) --processor wants to write a register
+						ReadAddressReg, WriteAddressReg, slaveAddr, resIndexReg) --processor wants to write a register
 	begin
 		-- default
 		start_algoNext <= start_algoReg;
 		xOCRAM_b_modeNext <= xOCRAM_b_modeReg;
 		ReadAddressNext <= ReadAddressReg;
 		WriteAddressNext <= WriteAddressReg;
+		resIndexNext <= resIndexReg;
 		ConvWriteEn <= (others => '0');
 		ConvIn <= (others => '0');
 		if writeEn = '1' then
@@ -115,6 +129,8 @@ begin
 					ConvWriteEn(4 downto 0) <= (others => '0');
 					ConvWriteEn(9 downto 5) <= (others => '1');
 					ConvIn(10*6-1 downto 5*6) <= writedata(29 downto 0);
+				when "110" =>
+					resIndexNext <= writedata(1 downto 0);
 				when others =>
 					null;
 			end case;

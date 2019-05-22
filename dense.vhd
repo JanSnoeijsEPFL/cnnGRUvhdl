@@ -11,7 +11,8 @@ entity dense is
 		BUFFER_SIZE : natural :=5;
 		NBITS_LUT : natural := 14;
 		NBITS_DIV : natural := 16;
-		xlog2NbWords : natural := 7
+		xlog2NbWords : natural := 7;
+		RAM_LINE_SIZE : natural := 600
 	);
 	port(
 		clk: in std_logic;
@@ -96,7 +97,7 @@ begin
 			--state_4_reg <= sleep;
 			--state_5_reg <= sleep;
 			--state_6_reg <= sleep;
-			buffer_reg <= (others => '0');
+			buffer_reg <= (others => (others => '0'));
 			ram_Cntr_1_reg <= (others => '0');
 			ram_Cntr_2_reg <= (others => '0');
 			trig_mac_1_reg <= '0';

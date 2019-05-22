@@ -75,9 +75,6 @@ entity accelerator is
 		uReadEn : in std_logic;
 		wReadEn : in std_logic;
 		xReadEn : in std_logic
-		
-
-
 	);
 end entity accelerator;
 
@@ -189,13 +186,17 @@ architecture rtl of accelerator is
 	signal x_ocram_DEBUG_addr_b : std_logic_vector(xlog2NBWords-1 downto 0);
 	signal x_ocram_DEBUG_data_b : std_logic_vector(RAM_LINE_SIZE-1 downto 0);
 	signal x_ocram_DEBUG_wren_b : std_logic;
-	
+	signal uocram_addr_gru :  std_logic_vector(8 downto 0);
+	signal uocram_data_gru : std_logic_vector(RAM_LINE_SIZE-1 downto 0);
+	signal uocram_addr_dense : std_logic_vector(8 downto 0);
+	signal uocram_data_dense : std_logic_vector(RAM_LINE_SIZE-1 downto 0);
 	signal xAddress_b_maxp : std_logic_vector(xlog2NBWords-1 downto 0);
 	signal xWren_b_maxp : std_logic;
 	signal dense_trigger : std_logic;
 	signal dense_end : std_logic;
 	signal hps_write_new_batch : std_logic;
 	signal hps_DEBUG_read : std_logic;
+	signal res_final: std_logic_vector(NBITS_DIV*OUTPUTS-1 downto 0);
 	
 	component fifo_x
 		PORT
@@ -273,7 +274,8 @@ begin
 		ConvIn => ConvRegIn,
 		ConvOut => ConvRegOut,
 		ConvWriteEn => ConvWriteEn,
-		xOCRAM_b_mode => xOCRAM_b_mode
+		xOCRAM_b_mode => xOCRAM_b_mode, 
+		res_final => res_final
 	);
 	
 	
@@ -571,8 +573,8 @@ begin
 		
 		wocram_addr => wAddress_acc,
 		wocram_data => wDataOut_acc,
-		uocram_addr => uAddress_gru,
-		uocram_data => uDataOut_gru,
+		uocram_addr => uocram_addr_gru,
+		uocram_data => uocram_data_gru,
 		-- output data
 		s_out => s_out,
 		comp_mode => comp_mode_gru,
@@ -599,7 +601,8 @@ begin
 	-- COMP UNIT DATA MUX
 	comp_mode <= "01" when algo_state = "010" else comp_mode_gru; --conv2d or GRU;
 	x_comp_line <= macs_o;
-	
+	uAddress_acc <= uocrm_addr_gru when algo_state = "011" else uocram_addr_dense;
+	uDataOut_acc <= uocram_data_gru when algo_state = "011" else uocram_data_dense;
 	dense_inst: entity work.dense(rtl)
 	generic map(
 		NBITS => NBITS,
@@ -608,7 +611,8 @@ begin
 		BUFFER_SIZE => DENSE_BUFFER_SIZE,
 		NBITS_LUT => NBITS_LUT,
 		NBITS_DIV=> NBITS_DIV,
-		xlog2NbWords => xlog2NbWords
+		xlog2NbWords => xlog2NbWords,
+		RAM_LINE_SIZE => RAM_LINE_SIZE
 	)
 	port map(
 		clk => clk, 
