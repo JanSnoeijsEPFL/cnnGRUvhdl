@@ -78,23 +78,37 @@ begin
 	process
 		variable seed1, seed2 : positive;              -- seed values for random generator
 		variable rand: real;   -- random real-number value in range 0 to 1.0  
-		variable range_of_rand : real := 2.0**5-1.0;   
-		variable range_of_rand2 : real := 2.0**30-1.0;	-- the range of random values created will be 0 to +0b111111.
+		variable range_of_rand : real := 2.0**1-1.0;   
+		variable range_of_rand2 : real := 2.0**6-1.0;	-- the range of random values created will be 0 to +0b111111.
 		variable RAMvector : std_logic_vector(31 downto 0);
 		variable rand_num : integer;
+		variable rand_num2 : integer;
+
 	begin
-		
+		s_out_tb <= (others => '0');
+		uocram_data_tb <= (others => '0'); 
 		wait for CLK_PER*1/2;
 		wait for 1*CLK_PER;
-		for i in 0 to NBOUT-1 loop
-			uniform(seed1, seed2, rand);
-			rand_num := integer(rand*range_of_rand);
-			s_out_tb(i*NBITS+NBITS-1 downto i*NBITS) <= std_logic_vector(to_unsigned(rand_num,6 ));
-			uocram_data_tb(i*NBITS+NBITS-1 downto i*NBITS) <= std_logic_vector(to_unsigned(rand_num,6)); 
-		end loop;
 		dense_trigger_tb <= '1';
 		wait for 1*CLK_PER;
 		dense_trigger_tb <= '0';
+		wait for 1*CLK_PER;
+
+		for j in 0 to 100 loop
+			for i in 0 to NBOUT-1 loop
+				uniform(seed1, seed2, rand);
+				rand_num := integer(rand*range_of_rand);
+				rand_num2 := integer(rand*range_of_rand2);
+
+				s_out_tb(i*NBITS+NBITS-1 downto i*NBITS) <= std_logic_vector(to_unsigned(rand_num,6 ));
+				if i mod 3 = 0 then
+					uocram_data_tb(i*NBITS+NBITS-1 downto i*NBITS) <= std_logic_vector(to_unsigned(rand_num,6)); 
+				else
+					uocram_data_tb(i*NBITS+NBITS-1 downto i*NBITS) <= std_logic_vector(to_unsigned(rand_num2,6)); 
+				end if;
+			end loop;
+			wait for 1*CLK_PER;
+		end loop;	
 		wait for 150*CLK_PER;
 		stop <= true;
 		wait;
