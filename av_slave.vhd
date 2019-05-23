@@ -47,7 +47,7 @@ architecture rtl of av_slave is
 	signal ReadAddressReg, ReadAddressNext : std_logic_vector(31 downto 0);
 	signal WriteAddressReg, WriteAddressNext : std_logic_vector(31 downto 0);
 	signal hps_ram_trigReg, hps_ram_trigNext : std_logic_vector(1 downto 0);
-	type res_arr is array(0 to OUT_DENSE-1) of std_logic_vector(NBITS_DIV*2-1 downto 0);
+	type res_arr is array(0 to OUT_DENSE-1) of std_logic_vector(NBITS_DIV-1 downto 0);
 	signal resReg, resNext : res_arr;
 	signal resIndexReg, resIndexNext : std_logic_vector(1 downto 0);
 	
@@ -74,7 +74,7 @@ begin
 			resIndexReg <= resIndexNext;
 		end if;
 	end process REG;
-	
+
 	READING: process(readEn, hps_ram_trigReg, xOCRAM_b_modeReg, start_algoReg, 
 							ReadAddressReg, WriteAddressReg, slaveAddr, ConvOut, resReg, resIndexReg) --processor wants to read a register
 	begin
@@ -140,6 +140,7 @@ begin
 	end process WRITING;
 	
 	-- status
+	resNext <= resReg;
 	algoStateNext <= algo_state;
 	hps_ram_trigNext <= hps_DEBUG_read & hps_write_new_batch;
 	-- output signals
