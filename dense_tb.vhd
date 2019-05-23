@@ -112,6 +112,5 @@ begin
 		wait for 150*CLK_PER;
 		stop <= true;
 		wait;
-
 	end process;
 end architecture bench;
