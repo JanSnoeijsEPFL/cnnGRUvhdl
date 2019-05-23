@@ -153,7 +153,7 @@ begin
 		end if;
 	end process;
 	
-	NSL: process(state_reg, dense_trigger, buffIter_CntrEnd, ram_CntrEnd)
+	NSL: process(state_reg, dense_trigger, buffIter_CntrEnd, ram_CntrEnd, buffIter_CntrVal)
 	begin
 		state_next <= state_reg;
 		trig_mac_fsm <= '0';
