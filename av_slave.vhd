@@ -140,7 +140,7 @@ begin
 	end process WRITING;
 	
 	-- status
-	resNext <= resReg;
+	resNext <= res_final;
 	algoStateNext <= algo_state;
 	hps_ram_trigNext <= hps_DEBUG_read & hps_write_new_batch;
 	-- output signals
