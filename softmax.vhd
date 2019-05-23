@@ -24,8 +24,8 @@ architecture rtl of softmax is
 	signal state_reg, state_next : FSM;
 	signal state_1_reg, state_1_next : FSM;
 	type exp_arr is array(0 to OUTPUTS-1) of std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
+	type out_arr is array(0 to OUTPUTS-1) of std_logic_vector(NBITS_DIV-1 downto 0);
 	signal acc_reg, acc_next : std_logic_vector(NBITS_DIV-1 downto 0);
-	signal div_reg, div_next : std_logic_vector(NBITS_DIV-1 downto 0);
 	signal exp_reg, exp_next : exp_arr;
 	signal sum_reg, sum_next : std_logic_vector(NBITS_DIV-1 downto 0);
 	constant ZEROS : std_logic_vector(NBITS_DIV*OUTPUTS-1 downto 0) := (others => '0');
@@ -40,7 +40,8 @@ architecture rtl of softmax is
 	signal acc_extended : std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
 	signal softmax_rdy_reg, softmax_rdy_next : std_logic;
 	signal x_new : std_logic_vector(NBITS-1 downto 0);
-	signal y_reg, y_next : std_logic_vector(NBITS_DIV*OUTPUTS-1 downto 0);
+	signal y_reg, y_next : out_arr;
+	signal div_res : std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0)
 	signal x_reg, x_next : std_logic_vector(NBITS*OUTPUTS-1 downto 0);
 	--signal trig_softmax_1_reg, trig_softmax_1_next : std_logic;
 begin
@@ -54,7 +55,6 @@ begin
 	begin
 		if rstB = '0' then
 			acc_reg <= (others => '0');
-			div_reg <= (others => (others => '0'));
 			exp_reg <= (others => (others => '0'));
 			sum_reg <= (others => '0');
 			state_reg <= sleep;
@@ -63,10 +63,10 @@ begin
 			exp_Cntr_1_reg <= (others => '0');
 			exp_Cntr_2_reg <= (others => '0');
 			x_reg <= (others => '0');
+			y_reg <= (others => (others => '0'));
 			--trig_softmax_1_reg <= '0';
 		elsif rising_edge(clk) then
 			acc_reg <= acc_next;
-			div_reg <= div_next;
 			exp_reg <= exp_next;
 			sum_reg <= sum_next;
 			state_reg <= state_next;
@@ -75,6 +75,7 @@ begin
 			exp_Cntr_1_reg <= exp_Cntr_1_next;
 			exp_Cntr_2_reg <= exp_Cntr_2_next;
 			x_reg <= x_next;
+			y_reg <= y_next;
 			--trig_softmax_1_reg <= trig_softmax_1_next;
 		end if;
 	end process;
@@ -84,18 +85,22 @@ begin
 		state_next <= state_reg;
 		exp_CntrEnable <= '0';
 		exp_CntrReset <= '0';
+
 		case state_reg is
 			when sleep =>
 				if trig_softmax = '1' then
 					state_next <= calc_sum;
 					exp_CntrReset <= '1';
+					div_CntrReset <= '1';
 				end if;
 			when calc_sum => 
 				exp_CntrEnable <= '1';
 				if exp_CntrEnd = '1' then
-					state_next <= divide;
+					state_next <= divide_1;
 				end if;
-			when divide => 
+			when divide_1 => 
+				state_next <= divide_2;
+			when divide_2 =>
 				exp_CntrEnable <= '1';
 				if exp_CntrEnd = '1' then
 					state_next <= sleep;
@@ -118,11 +123,14 @@ begin
 	acc_extended <= DIV_ZEROS&acc_reg;
 	reg_fill: for i in 0 to OUTPUTS-1 generate
 		exp_next(i) <=exp_out& DIV_ZEROS when state_reg = calc_sum and to_integer(unsigned(exp_CntrVal))=i else exp_reg(i);
-		y(NBITS_DIV*i+NBITS_DIV-1 downto NBITS_DIV*i) <= div_reg(i)(NBITS_DIV-1 downto 0);
+		y_next(i) <= div_res(NBITS_DIV-1 downto 0) when state_2_reg = divide_2 and to_integer(unsigned(exp_Cntr_2_reg)) = i else y_reg(i);
+		y(NBITS*i+NBITS-1 downto NBITS*i) <= y_next(i);
 	end generate;
-	div_next <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_1_reg)))/(unsigned(acc_extended))) when state_1_reg = divide else div_reg(to_integer(unsigned(exp_Cntr_1_reg)));
+	div_res <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_2_reg)))/(unsigned(acc_extended))) 
+					when state_2_reg = divide_2 else (others => '0');
 	sum_next <= exp_out when state_reg = calc_sum else sum_reg;
 	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else acc_reg;
+	
 	exp_cntr_inst: entity work.counter(rtl)
 	generic map(
 		MAX_VAL =>  OUTPUTS --3
