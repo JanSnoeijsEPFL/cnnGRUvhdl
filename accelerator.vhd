@@ -138,7 +138,6 @@ architecture rtl of accelerator is
 	--signal xDataOut_a_GRU : std_logic_vector(599 downto 0);
 	signal conv2d_end : std_logic;
 	signal gru_end : std_logic;
-	signal dense_end : std_logic;
 	signal algo_state : std_logic_vector(2 downto 0);
 	
 	signal macs_x_conv : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
@@ -392,14 +391,15 @@ begin
 		start_algo => start_algo,
 		conv2d_end => conv2d_end,
 		gru_end => gru_finished_products,
-		dense_end => dense_end,
+		dense_end => end_dense,
 		algo_state => algo_state,
 		start_conv2d => start_conv2d,
 		trig_serializer => trig_serializer,
 		recur_iter => algo_recur_iter,
 		trigger_gru => trigger_gru,
 		hps_write_new_batch => hps_write_new_batch,
-		hps_DEBUG_read => hps_DEBUG_read
+		hps_DEBUG_read => hps_DEBUG_read,
+		trigger_dense => dense_trigger
 	);
 	
 	--CONV2D
@@ -604,7 +604,8 @@ begin
 	comp_mode <= "01" when algo_state = "010" else comp_mode_gru; --conv2d or GRU;
 	x_comp_line <= macs_o;
 	uAddress_acc <= uocram_addr_gru when algo_state = "011" else uocram_addr_dense;
-	uDataOut_acc <= uocram_data_gru when algo_state = "011" else uocram_data_dense;
+	uocram_data_gru <= uDataOut_acc when algo_state = "011" else (others => '0');
+	uocram_data_dense <= uDataOut_acc when algo_state = "100" else (others => '0');
 	dense_inst: entity work.dense(rtl)
 	generic map(
 		NBITS => NBITS,

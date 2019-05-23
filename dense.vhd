@@ -31,8 +31,9 @@ end entity dense;
 
 architecture rtl of dense is
 	type FSM is (sleep, fill_buffer, wait1, wait2);
-	type macFSM is (sleep, rd_buffer);
+	type macFSM is (sleep, rd_buffer, bias);
 	type buffer_type is array(0 to BUFFER_SIZE-1) of std_logic_vector(OUTPUTS*NBITS-1 downto 0);
+	constant const_16 : std_logic_vector(NBITS-1 downto 0) := std_logic_vector(to_unsigned(16, NBITS));
 	signal state_reg, state_next : FSM;
 	signal state_1_reg, state_1_next : FSM;
 	signal state_2_reg, state_2_next : FSM;
@@ -43,14 +44,13 @@ architecture rtl of dense is
 	--signal state_6_reg, state_6_next : FSM;
 	--signal state_7_reg, state_7_next : FSM;
 	signal buffer_reg, buffer_next : buffer_type;
+	signal buffer_1_reg, buffer_1_next : buffer_type;
 	signal ram_Cntr_1_reg, ram_Cntr_1_next : std_logic_vector(1 downto 0);
 	signal ram_Cntr_2_reg, ram_Cntr_2_next : std_logic_vector(1 downto 0);
 	
 	signal trig_mac_1_reg, trig_mac_1_next : std_logic;
 	signal trig_mac_2_reg, trig_mac_2_next : std_logic;
-	signal trig_mac_3_reg, trig_mac_3_next : std_logic;
-	signal trig_mac_4_reg, trig_mac_4_next : std_logic;
-	signal trig_mac_5_reg, trig_mac_5_next : std_logic;
+
 
 	signal dense_CntrEnd : std_logic;
 	signal dense_CntrVal : std_logic_vector(6 downto 0);
@@ -88,11 +88,13 @@ architecture rtl of dense is
 	signal dense_CntrEnd_2_reg, dense_CntrEnd_2_next : std_logic;
 	signal dense_CntrEnd_3_reg, dense_CntrEnd_3_next : std_logic;
 	signal dense_CntrEnd_4_reg, dense_CntrEnd_4_next : std_logic;
+	signal dense_CntrEnd_5_reg, dense_CntrEnd_5_next : std_logic;
+	signal const_16_vect : std_logic_vector(NBITS*OUTPUTS-1 downto 0);
 	signal trig_softmax : std_logic;
 	signal softmax_rdy : std_logic;
 
 begin
-	
+	end_dense <= softmax_rdy;
 	-- reg chain delay
 	ram_Cntr_1_next <= ram_CntrVal;
 	ram_Cntr_2_next <= ram_Cntr_1_reg;
@@ -100,6 +102,7 @@ begin
 	dense_CntrEnd_2_next <= dense_CntrEnd_1_reg;
 	dense_CntrEnd_3_next <= dense_CntrEnd_2_reg;
 	dense_CntrEnd_4_next <= dense_CntrEnd_3_reg;
+	dense_CntrEnd_5_next <= dense_CntrEnd_4_reg;
 	state_1_next <= state_reg;
 	state_2_next <= state_1_reg;
 	trig_mac_1_next <= trig_mac_fsm;
@@ -116,6 +119,7 @@ begin
 			--state_5_reg <= sleep;
 			--state_6_reg <= sleep;
 			buffer_reg <= (others => (others => '0'));
+			buffer_1_reg <= (others => (others => '0'));
 			ram_Cntr_1_reg <= (others => '0');
 			ram_Cntr_2_reg <= (others => '0');
 			trig_mac_1_reg <= '0';
@@ -124,6 +128,7 @@ begin
 			dense_CntrEnd_2_reg <= '0';
 			dense_CntrEnd_3_reg <= '0';
 			dense_CntrEnd_4_reg <= '0';
+			dense_CntrEnd_5_reg <= '0';
 		elsif rising_edge(clk) then
 			state_reg <= state_next;
 			state_1_reg <= state_1_next;
@@ -133,7 +138,8 @@ begin
 			--state_4_reg <= state_4_next;
 			--state_5_reg <= state_5_next;
 			--state_6_reg <= state_6_next;
-			buffer_reg <= buffer_next;
+			buffer_1_reg <= buffer_1_next;
+			buffer_1_reg <= buffer_1_next;
 			ram_Cntr_1_reg <= ram_Cntr_1_next;
 			ram_Cntr_2_reg <= ram_Cntr_2_next;
 			trig_mac_1_reg <= trig_mac_1_next;
@@ -142,6 +148,8 @@ begin
 			dense_CntrEnd_2_reg <= dense_CntrEnd_2_next;
 			dense_CntrEnd_3_reg <= dense_CntrEnd_3_next;
 			dense_CntrEnd_4_reg <= dense_CntrEnd_4_next;
+			dense_CntrEnd_5_reg <= dense_CntrEnd_5_next;
+
 		end if;
 	end process;
 	
@@ -164,11 +172,11 @@ begin
 				ram_CntrEnable <= '1';
 				if ram_CntrEnd = '1' then
 					state_next <= wait1;
-					if buffIter_CntrVal = "00000" then
-						trig_mac_fsm <= '1';
-					end if;
 				end if;
 			when wait1 =>
+				if buffIter_CntrVal = "00000" then
+					trig_mac_fsm <= '1';
+				end if;
 				state_next <= wait2;
 			when wait2 =>
 				buffIter_CntrEnable <= '1';
@@ -198,13 +206,17 @@ begin
 				buff_CntrEnable <= '1';
 				dense_CntrEnable <= '1';
 				if dense_CntrEnd = '1' then
-					mac_state_next <= sleep;
+					mac_state_next <= bias;
 				end if;
+			when bias =>
+				mac_state_next <= sleep;
 		end case;
 	end process;
 	
 	uocram_addr <= std_logic_vector(to_unsigned(U_DENSE_OFFSET,uocram_addr'length) + resize(unsigned(ram_CntrVal), uocram_addr'length))
-						when state_reg = fill_buffer;
+						when state_reg = fill_buffer else 
+						std_logic_vector(to_unsigned(306,uocram_addr'length)) when state_reg = wait1 and buffIter_CntrEnd = '1' else
+						(others => '0');
 	BUFF :for i in 0 to BUFFER_SIZE-1 generate
 		buffer_next(i)(NBITS-1+NBITS*(to_integer(unsigned(ram_Cntr_2_reg))) downto NBITS*(to_integer(unsigned(ram_Cntr_2_reg)))) <= 
 												uocram_data(to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i+NBITS-1 downto 
@@ -214,14 +226,18 @@ begin
 	COPY : for i in 0 to OUTPUTS-1 generate
 		s_final_vect(NBITS*i+NBITS-1 downto NBITS*i) <= s_final(NBITS*to_integer(unsigned(dense_CntrVal))+ NBITS-1 
 																		downto NBITS*to_integer(unsigned(dense_CntrVal)));
+		const_16_vect(NBITS*i+NBITS-1 downto NBITS*i) <= const_16;
 		macs_clear_vect(i) <= macs_clear;
 	end generate;
-	
-	macs_x <= s_final_vect when mac_state_reg = rd_buffer else (others => '0');
-	macs_w <= buffer_reg(to_integer(unsigned(buff_CntrVal))) when mac_state_reg = rd_buffer else (others=> '0');
-	macs_clear <= '1' when dense_CntrEnd_3_reg = '1' else '0';
-	softmax_in	<= res_dense when dense_CntrEnd_4_reg = '1' else (others => '0');
-	trig_softmax <= '1' when dense_CntrEnd_4_reg = '1' else '0';
+	buffer_1_next <= buffer_reg when state_2_reg = wait1 else buffer_1_reg;
+	macs_x <= s_final_vect when mac_state_reg = rd_buffer else 
+						const_16_vect when mac_state_reg = bias else (others => '0');
+	macs_w <= buffer_1_reg(to_integer(unsigned(buff_CntrVal))) when mac_state_reg = rd_buffer else
+				uocram_data(NBITS*OUTPUTS-1 downto 0)  when mac_state_reg = bias else
+				(others=> '0');
+	macs_clear <= '1' when dense_CntrEnd_4_reg = '1' else '0';
+	softmax_in	<= res_dense when dense_CntrEnd_5_reg = '1' else (others => '0');
+	trig_softmax <= '1' when dense_CntrEnd_5_reg = '1' else '0';
 	y_out <= softmax_out;
 	buffIter_cntr_inst : entity work.counter(rtl)
 	generic map(

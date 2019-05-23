@@ -30,7 +30,15 @@ architecture bench of gru_tb is
 	constant NB_BURSTS : natural := 625;
 	constant MAX_VAL_buffer : natural := 19; --19
 	constant MAX_VAL_conv : natural := 2;--2
-	
+
+	constant NBOUT : natural := 100;
+	constant	DEBUG : natural := 0;
+	constant	NBITS_DIV : natural := 16;
+	constant	DENSE_BUFFER_SIZE : natural := 5;
+	constant	DENSE_OUT : natural := 3;
+	constant	NACC_DENSE : natural :=7;
+	constant	U_DENSE_OFFSET : natural := 303;
+	constant FRAC_LUT : natural := 11;
 	constant CLK_PER : time := 20 ns;
 	--type paramSDRAM is array(5000 downto 0) of std_logic_vector(31 downto 0);
 	--signal SDRAMblock : paramSDRAM;
@@ -161,7 +169,7 @@ begin
 			wait for 1*CLK_PER;
 		end loop;
 		xWren_hps_tb <= '0';
-		for i in 0 to 20*3234 loop
+		for i in 0 to 20*3234-1 loop
 			uniform(seed1, seed2, rand);
 			rand_num := integer(rand*range_of_rand);
 			wWren_hps_tb <= '1';
@@ -176,7 +184,7 @@ begin
 			wait for 1*CLK_PER;
 		end loop;
 		wWren_hps_tb <= '0';
-		for i in 0 to 20*306+3 loop
+		for i in 0 to 20*307-1 loop
 			uniform(seed1, seed2, rand);
 			rand_num := integer(rand*range_of_rand);
 			uWren_hps_tb <= '1';
@@ -199,17 +207,17 @@ begin
 		
 		wait for 1*CLK_PER;
 		ASwriteEn_tb <= '0';
-		wait for 100000*CLK_PER;
+		wait for 50000*CLK_PER;
 		ASwriteEn_tb <= '1';
 		ASwritedata_tb(1 downto 0) <= "00";
 		wait for 1*CLK_PER;
 		ASwriteEn_tb <= '0';
 		xReadEn_tb <= '1';
 		wait for 1*CLK_PER;
-		for i in 0 to 20*44-1 loop
-			xAddress_hps_tb <= std_logic_vector(to_unsigned(i/20*32+i mod 20 + 23*32, xAddress_hps_tb'length));
-			wait for 1*CLK_PER;
-		end loop;
+	--	for i in 0 to 20*44-1 loop
+		--	xAddress_hps_tb <= std_logic_vector(to_unsigned(i/20*32+i mod 20 + 23*32, xAddress_hps_tb'length));
+	--		wait for 1*CLK_PER;
+	--	end loop;
 		stop <= true;
 		wait;
 		
