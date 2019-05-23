@@ -25,7 +25,7 @@ architecture rtl of softmax is
 	signal state_1_reg, state_1_next : FSM;
 	type exp_arr is array(0 to OUTPUTS-1) of std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
 	signal acc_reg, acc_next : std_logic_vector(NBITS_DIV-1 downto 0);
-	signal div_reg, div_next : exp_arr;
+	signal div_reg, div_next : std_logic_vector(NBITS_DIV-1 downto 0);
 	signal exp_reg, exp_next : exp_arr;
 	signal sum_reg, sum_next : std_logic_vector(NBITS_DIV-1 downto 0);
 	constant ZEROS : std_logic_vector(NBITS_DIV*OUTPUTS-1 downto 0) := (others => '0');
@@ -118,9 +118,9 @@ begin
 	acc_extended <= DIV_ZEROS&acc_reg;
 	reg_fill: for i in 0 to OUTPUTS-1 generate
 		exp_next(i) <=exp_out& DIV_ZEROS when state_reg = calc_sum and to_integer(unsigned(exp_CntrVal))=i else exp_reg(i);
-		div_next(i) <= std_logic_vector(unsigned(exp_reg(i))/(unsigned(acc_extended))) when state_1_reg = divide and to_integer(unsigned(exp_Cntr_1_reg))=i else div_reg(i);
 		y(NBITS_DIV*i+NBITS_DIV-1 downto NBITS_DIV*i) <= div_reg(i)(NBITS_DIV-1 downto 0);
 	end generate;
+	div_next <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_1_reg)))/(unsigned(acc_extended))) when state_1_reg = divide else div_reg(to_integer(unsigned(exp_Cntr_1_reg)));
 	sum_next <= exp_out when state_reg = calc_sum else sum_reg;
 	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else acc_reg;
 	exp_cntr_inst: entity work.counter(rtl)

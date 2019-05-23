@@ -140,7 +140,9 @@ begin
 	end process WRITING;
 	
 	-- status
-	resNext <= res_final;
+	res_gen: for i in 0 to OUT_DENSE-1 generate
+		resNext(i) <= res_final(NBITS_DIV*i + NBITS_DIV-1 downto NBITS_DIV*i );
+	end generate;
 	algoStateNext <= algo_state;
 	hps_ram_trigNext <= hps_DEBUG_read & hps_write_new_batch;
 	-- output signals

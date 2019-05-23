@@ -218,9 +218,12 @@ begin
 						std_logic_vector(to_unsigned(306,uocram_addr'length)) when state_reg = wait1 and buffIter_CntrEnd = '1' else
 						(others => '0');
 	BUFF :for i in 0 to BUFFER_SIZE-1 generate
-		buffer_next(i)(NBITS-1+NBITS*(to_integer(unsigned(ram_Cntr_2_reg))) downto NBITS*(to_integer(unsigned(ram_Cntr_2_reg)))) <= 
-												uocram_data(to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i+NBITS-1 downto 
-													to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i) when state_2_reg = fill_buffer;
+		RAM_gen: for j in 0 to OUTPUTS-1 generate
+			buffer_next(i)(NBITS-1+NBITS*j downto NBITS*j) <= 
+					uocram_data(to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i+NBITS-1 downto 
+						to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i) when state_2_reg = fill_buffer and
+							to_integer(unsigned(ram_Cntr_2_reg)) = j else buffer_reg(i)(NBITS-1+NBITS*j downto NBITS*j);
+		end generate;
 	end generate;
 	
 	COPY : for i in 0 to OUTPUTS-1 generate
