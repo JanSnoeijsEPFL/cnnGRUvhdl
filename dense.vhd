@@ -138,7 +138,7 @@ begin
 			--state_4_reg <= state_4_next;
 			--state_5_reg <= state_5_next;
 			--state_6_reg <= state_6_next;
-			buffer_1_reg <= buffer_1_next;
+			buffer_reg <= buffer_next;
 			buffer_1_reg <= buffer_1_next;
 			ram_Cntr_1_reg <= ram_Cntr_1_next;
 			ram_Cntr_2_reg <= ram_Cntr_2_next;
