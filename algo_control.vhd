@@ -78,7 +78,7 @@ begin
 				hps_DEBUG_read <= '1';
 				if recur_CntrEnd = '1' then --  has to be deasserted by processor
 					trigger_dense <= '1';
-					state_next <= recur;
+					state_next <= dense;
 				elsif start_algo = '1' then
 					if DEBUG = 1 then
 						state_next <= sleep;
