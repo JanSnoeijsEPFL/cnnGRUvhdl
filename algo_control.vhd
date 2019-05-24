@@ -56,6 +56,7 @@ begin
 		trigger_dense <= '0';
 		case state_reg is
 			when sleep =>
+				hps_DEBUG_read <= '1';
 				recur_CntrReset <= '1';
 				if start_algo = '1' then --  has to be deasserted by processor
 					state_next <= conv2d;
