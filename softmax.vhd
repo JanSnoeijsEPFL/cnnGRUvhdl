@@ -133,7 +133,8 @@ begin
 	div_res <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_2_reg))))/(unsigned(acc_extended)))
 					when state_2_reg = divide_2 else (others => '0');
 	sum_next <= exp_out when state_reg = calc_sum else sum_reg;
-	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else acc_reg;
+	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else
+					(others => '0') when trig_softmax = '1' else acc_reg;
 	
 	exp_cntr_inst: entity work.counter(rtl)
 	generic map(
