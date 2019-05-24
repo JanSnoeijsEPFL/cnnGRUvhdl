@@ -220,8 +220,8 @@ begin
 	BUFF :for i in 0 to BUFFER_SIZE-1 generate
 		RAM_gen: for j in 0 to OUTPUTS-1 generate
 			buffer_next(i)(NBITS-1+NBITS*j downto NBITS*j) <= 
-					uocram_data(to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS+NBITS-1 downto 
-						to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS) when state_2_reg = fill_buffer and
+					uocram_data(to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i+NBITS-1 downto 
+						to_integer(unsigned(buffIter_CntrVal))*NBITS*BUFFER_SIZE+NBITS*i) when state_2_reg = fill_buffer and
 							to_integer(unsigned(ram_Cntr_2_reg)) = j else buffer_reg(i)(NBITS-1+NBITS*j downto NBITS*j);
 		end generate;
 	end generate;
