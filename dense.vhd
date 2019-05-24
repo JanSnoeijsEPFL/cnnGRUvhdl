@@ -215,7 +215,7 @@ begin
 	
 	uocram_addr <= std_logic_vector(to_unsigned(U_DENSE_OFFSET,uocram_addr'length) + resize(unsigned(ram_CntrVal), uocram_addr'length))
 						when state_reg = fill_buffer else 
-						std_logic_vector(to_unsigned(306,uocram_addr'length)) when mac_state_reg = rd_buffer and buff_CntrVal = "100" else
+						std_logic_vector(to_unsigned(306,uocram_addr'length)) when mac_state_reg = rd_buffer and buff_CntrVal = "011" else
 						(others => '0');
 	BUFF :for i in 0 to BUFFER_SIZE-1 generate
 		RAM_gen: for j in 0 to OUTPUTS-1 generate
