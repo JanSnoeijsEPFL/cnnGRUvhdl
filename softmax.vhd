@@ -24,6 +24,7 @@ architecture rtl of softmax is
 	signal state_reg, state_next : FSM;
 	signal state_1_reg, state_1_next : FSM;
 	signal state_2_reg, state_2_next : FSM;
+	signal state_3_reg, state_3_next : FSM;
 	type exp_arr is array(0 to OUTPUTS-1) of std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
 	type out_arr is array(0 to OUTPUTS-1) of std_logic_vector(NBITS_DIV-1 downto 0);
 	signal acc_reg, acc_next : std_logic_vector(NBITS_DIV-1 downto 0);
@@ -38,11 +39,12 @@ architecture rtl of softmax is
 	constant DIV_ZEROS : std_logic_vector(FRAC_LUT-1 downto 0) := (others => '0');
 	signal exp_Cntr_1_reg, exp_Cntr_1_next : std_logic_vector(1 downto 0);
 	signal exp_Cntr_2_reg, exp_Cntr_2_next : std_logic_vector(1 downto 0);
+	signal exp_Cntr_3_reg, exp_Cntr_3_next : std_logic_vector(1 downto 0);
 	signal acc_extended : std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
 	signal softmax_rdy_reg, softmax_rdy_next : std_logic;
 	signal x_new : std_logic_vector(NBITS-1 downto 0);
 	signal y_reg, y_next : out_arr;
-	signal div_res : std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
+	signal div_res_next, div_res_reg : std_logic_vector(NBITS_DIV+FRAC_LUT-1 downto 0);
 	signal x_reg, x_next : std_logic_vector(NBITS*OUTPUTS-1 downto 0);
 	--signal trig_softmax_1_reg, trig_softmax_1_next : std_logic;
 begin
@@ -50,8 +52,11 @@ begin
 	-- reg chain
 	state_1_next <= state_reg;
 	state_2_next <= state_1_reg;
+	state_3_next <= state_2_reg;
 	exp_Cntr_1_next <= exp_CntrVal;
 	exp_Cntr_2_next <= exp_Cntr_1_reg;
+	exp_Cntr_3_next <= exp_Cntr_2_reg;
+
 	--trig_softmax_1_next <= trig_softmax;
 	REG: process(clk, rstB)
 	begin
@@ -63,6 +68,7 @@ begin
 			state_1_reg <= sleep;
 			state_2_reg <= sleep;
 			softmax_rdy_reg <= '0';
+			div_res_reg <= (others => '0');
 			exp_Cntr_1_reg <= (others => '0');
 			exp_Cntr_2_reg <= (others => '0');
 			x_reg <= (others => '0');
@@ -75,11 +81,14 @@ begin
 			state_reg <= state_next;
 			state_1_reg <= state_1_next;
 			state_2_reg <= state_2_next;
+			state_3_reg <= state_3_next;
 			softmax_rdy_reg <= softmax_rdy_next;
 			exp_Cntr_1_reg <= exp_Cntr_1_next;
 			exp_Cntr_2_reg <= exp_Cntr_2_next;
+			exp_Cntr_3_reg <= exp_Cntr_3_next;
 			x_reg <= x_next;
 			y_reg <= y_next;
+			div_res_reg <= div_res_next;
 			--trig_softmax_1_reg <= trig_softmax_1_next;
 		end if;
 	end process;
@@ -127,10 +136,10 @@ begin
 	acc_extended <= DIV_ZEROS&acc_reg;
 	reg_fill: for i in 0 to OUTPUTS-1 generate
 		exp_next(i) <=exp_out& DIV_ZEROS when state_reg = calc_sum and to_integer(unsigned(exp_CntrVal))=i else exp_reg(i);
-		y_next(i) <= div_res(NBITS_DIV-1 downto 0) when state_2_reg = divide_2 and to_integer(unsigned(exp_Cntr_2_reg)) = i else y_reg(i);
+		y_next(i) <= div_res_reg(NBITS_DIV-1 downto 0) when state_3_reg = divide_2 and to_integer(unsigned(exp_Cntr_3_reg)) = i else y_reg(i);
 		y(NBITS_DIV*i+NBITS_DIV-1 downto NBITS_DIV*i) <= y_next(i);
 	end generate;
-	div_res <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_2_reg))))/(unsigned(acc_extended)))
+	div_res_next <= std_logic_vector(unsigned(exp_reg(to_integer(unsigned(exp_Cntr_2_reg))))/(unsigned(acc_extended)))
 					when state_2_reg = divide_2 else (others => '0');
 	sum_next <= exp_out when state_reg = calc_sum else sum_reg;
 	acc_next <= std_logic_vector(resize(unsigned(sum_reg), acc_reg'length)+unsigned(acc_reg)) when state_1_reg = calc_sum else

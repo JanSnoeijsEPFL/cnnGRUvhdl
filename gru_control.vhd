@@ -107,8 +107,10 @@ architecture rtl of gru_control is
 	constant const_1 : std_logic_vector(NBITS-1 downto 0) := std_logic_vector(to_unsigned(1, NBITS));
 	signal cnst_1 : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 
-	signal s_reg_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
-	signal r_reg_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
+	signal s_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
+	signal rs_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
+	signal s_lin_reg, s_lin_next : std_logic_vector(NBITS-1 downto 0);
+	signal rs_lin_reg, rs_lin_next : std_logic_vector(NBITS-1 downto 0);
 	signal fifo_data_vect : std_logic_vector(MAC_MAX*NBITS-1 downto 0);
 
 begin
@@ -133,6 +135,8 @@ begin
 			trig_1_reg <= '0';
 			recCntr_1_reg <= (others => '0');
 			recCntr_2_reg <= (others => '0');
+			s_lin_reg <= (others => '0');
+			rs_lin_reg <= (others => '0');
 			--cycle_lat_reg <= '0';
 		elsif rising_edge(clk) then
 			--s_1_reg <= s_1_next;
@@ -150,6 +154,8 @@ begin
 			state_5_reg <= state_5_next;
 			state_6_reg <= state_6_next;
 			state_7_reg <= state_7_next;
+			s_lin_reg <= s_lin_next;
+			rs_lin_reg <= rs_lin_next;
 			recCntr_1_reg <= recCntr_1_next;
 			recCntr_2_reg <= recCntr_2_next;
 		end if;
@@ -297,19 +303,22 @@ begin
 							state_5_reg = ZINV2 or state_5_reg = R_S or state_5_reg = S_Z or (state_5_reg = H_1_Z and recur_CntrVal = "0000")
 						else '0';
 
+	s_lin_next <= s_reg(NBITS*to_integer(unsigned(recCntr_1_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_1_reg)));
+	rs_lin_next <= r_reg(NBITS*to_integer(unsigned(recCntr_1_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_1_reg)));	
+	
 	gen_vect : for i in 0 to MAC_MAX-1 generate
 		cnst_ones(NBITS*i + NBITS-1 downto NBITS*i) <= const_one;
 		cnst_17(NBITS*i + NBITS-1 downto NBITS*i) <= const_17;
 		cnst_1(NBITS*i + NBITS-1 downto NBITS*i) <= const_1;
 		fifo_data_vect(NBITS*i +NBITS-1 downto NBITS*i) <= fifo_data;
-		s_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= s_reg(NBITS*to_integer(unsigned(recCntr_2_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_2_reg)));
-		r_reg_vect(NBITS*i+NBITS-1 downto NBITS*i) <= r_reg(NBITS*to_integer(unsigned(recCntr_2_reg))+NBITS-1 downto NBITS*to_integer(unsigned(recCntr_2_reg)));
+		s_vect(NBITS*i + NBITS-1 downto NBITS*i) <= s_lin_reg;
+		rs_vect(NBITS*i + NBITS-1 downto NBITS*i) <= rs_lin_reg;
 	end generate;
 
 
 	macs_x_gru <= fifo_data_vect  when state_2_reg = Zdir or state_2_reg = Rdir or state_2_reg  = Hdir else
-						s_reg_vect when state_2_reg = Zrec or state_2_reg = Rrec else
-						r_reg_vect when state_2_reg = Hrec else
+						s_vect when state_2_reg = Zrec or state_2_reg = Rrec else
+						rs_vect when state_2_reg = Hrec else
 						s_reg when state_2_reg = R_S  or state_2_reg = S_Z else
 						cnst_1 when state_2_reg = ZINV1 else
 						cnst_17 when state_2_reg = ZINV2 else
